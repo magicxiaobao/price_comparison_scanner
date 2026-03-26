@@ -64,9 +64,10 @@ async def get_compliance_matrix(project_id: str):
 
 @router.put("/compliance/{match_id}/confirm")
 async def confirm_match(match_id: str, req: ComplianceConfirmRequest):
-    """确认匹配结果"""
-    service = _find_service_for_match(match_id)
-    if not service:
+    """确认匹配结果。请求体含 project_id + status"""
+    service = _get_service(req.project_id)
+    match = service.repo.get_by_id(match_id)
+    if not match:
         raise HTTPException(status_code=404, detail="匹配记录不存在")
     result = service.confirm_match(match_id, req.status)
     return result
@@ -74,38 +75,18 @@ async def confirm_match(match_id: str, req: ComplianceConfirmRequest):
 
 @router.put("/compliance/{match_id}/accept")
 async def accept_match(match_id: str, req: ComplianceAcceptRequest):
-    """标记部分符合为可接受"""
-    service = _find_service_for_match(match_id)
-    if not service:
+    """标记部分符合为可接受。请求体含 project_id + is_acceptable"""
+    service = _get_service(req.project_id)
+    match = service.repo.get_by_id(match_id)
+    if not match:
         raise HTTPException(status_code=404, detail="匹配记录不存在")
     result = service.accept_match(match_id, req.is_acceptable)
     return result
 
 
-def _find_service_for_match(match_id: str) -> ComplianceService | None:
-    """根据 match_id 查找对应的 ComplianceService"""
-    import json
-    from pathlib import Path
-    from api.deps import get_app_data_dir
-    from db.database import Database
-    from db.compliance_repo import ComplianceRepo
-
-    config_path = get_app_data_dir() / "config.json"
-    if not config_path.exists():
-        return None
-    config = json.loads(config_path.read_text(encoding="utf-8"))
-
-    for p in config.get("recent_projects", []):
-        db_path = Path(p["path"]) / "project.db"
-        if not db_path.exists():
-            continue
-        db = Database(db_path)
-        repo = ComplianceRepo(db)
-        row = repo.get_by_id(match_id)
-        if row:
-            return ComplianceService(db)
-    return None
 ```
+
+**注意：** `ComplianceConfirmRequest` 和 `ComplianceAcceptRequest` 必须包含 `project_id` 字段（在 Task 4.11 Pydantic 模型中定义）。这样 API 层无需遍历全局项目配置来定位 match 所属项目。
 
 ### main.py 修改
 

@@ -11,6 +11,7 @@
 ## 输出物
 
 - 修改: `frontend/src-tauri/src/main.rs`（填充 sidecar 管理全部逻辑）
+- 修改: `frontend/src/lib/api.ts`（启动时通过 Tauri invoke 获取 port 和 token，替代开发模式硬编码）
 - 创建: `backend/api/shutdown.py`（`POST /api/shutdown` 路由）
 - 修改: `backend/main.py`（注册 shutdown 路由）
 - 修改: `docs/api/openapi.json`（新增 shutdown 端点）
@@ -19,7 +20,7 @@
 
 - 不修改 `backend/engines/` 目录
 - 不修改 `backend/services/` 目录
-- 不修改 `frontend/src/` 下的 React 组件（前端 UI 变更由 Task 5.2 负责）
+- 不修改 `frontend/src/app/`、`frontend/src/components/`、`frontend/src/stores/` 下的 React 组件和 Store（前端 UI 变更由 Task 5.2 负责）
 - 不修改 `backend/db/` 目录
 
 ## 实现规格
@@ -55,7 +56,7 @@ app.include_router(shutdown_router, prefix="/api")
 
 ### Tauri Rust 端：main.rs sidecar 管理
 
-> **必须用 DeepWiki 查询 `tauri-apps/tauri`**，确认 Tauri 2.x 的 sidecar 启动 API（`Command::new_sidecar`）、进程管理 API、`invoke` 机制的最新用法。以下为逻辑伪代码，实际实现需根据 Tauri 2.x API 调整。
+> **必须用 DeepWiki 查询 `tauri-apps/tauri`**，确认 Tauri 2.x 的 sidecar 启动 API（`Command::new_sidecar`）、进程管理 API、`invoke` 机制的最新用法。若 DeepWiki 不可用，以 Tauri 官方文档（https://v2.tauri.app/）或项目内已有 Tauri 配置为准。以下为逻辑伪代码，实际实现需根据 Tauri 2.x API 调整。
 
 #### 核心数据结构
 

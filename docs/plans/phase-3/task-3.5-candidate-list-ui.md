@@ -14,7 +14,7 @@
 - 创建: `frontend/src/components/stages/grouping-stage.tsx`
 - 创建: `frontend/src/components/stages/group-candidate-list.tsx`
 - 修改: `frontend/src/app/project-workbench.tsx`（在阶段导航中注册 GroupingStage）
-- 修改: `frontend/src/stores/project-store.ts`（添加归组相关状态和 actions，或创建独立 store）
+- 创建: `frontend/src/stores/grouping-store.ts`（独立归组状态管理）
 
 ## 禁止修改
 
@@ -261,6 +261,6 @@ git add frontend/src/types/grouping.ts \
        frontend/src/components/stages/group-candidate-list.tsx \
        frontend/src/lib/api.ts \
        frontend/src/app/project-workbench.tsx \
-       frontend/src/stores/project-store.ts
+       frontend/src/stores/grouping-store.ts
 git commit -m "Phase 3.5: 前端 GroupingStage — 候选归组列表 + 置信度分层展示 + 归组类型定义"
 ```

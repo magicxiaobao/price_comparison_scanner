@@ -178,6 +178,7 @@ from models.grouping import (
     CommodityGroupResponse, GroupMemberSummary,
     GroupConfirmResponse, GroupSplitResponse,
     GroupMergeResponse, GroupMarkNotComparableResponse,
+    GroupMoveMemberResponse,
 )
 
 ENGINE_VERSION = "commodity_grouper:1.0"
@@ -355,6 +356,46 @@ class GroupingService:
         self._propagate_dirty(group["project_id"])
         return GroupMarkNotComparableResponse(id=group_id, status="not_comparable")
 
+    def move_member(self, source_group_id: str, target_group_id: str, row_id: str) -> GroupMoveMemberResponse:
+        """
+        原子操作：将成员从源组移动到目标组。
+        1. 验证源组和目标组都存在
+        2. 验证 row_id 属于源组
+        3. 验证源组成员数 > 1（不能拖空）
+        4. 验证目标组状态允许接收（非 confirmed/not_comparable）
+        5. 从源组移除成员
+        6. 添加到目标组
+        7. 触发失效传播
+        """
+        source = self.repo.get_group_by_id(source_group_id)
+        target = self.repo.get_group_by_id(target_group_id)
+        if not source or not target:
+            raise ValueError("源组或目标组不存在")
+
+        if target["status"] in ("confirmed", "not_comparable"):
+            raise ValueError(f"目标组状态为 {target['status']}，不接受新成员")
+
+        source_members = self.repo.get_group_members(source_group_id)
+        if len(source_members) <= 1:
+            raise ValueError("源组仅剩 1 个成员，不可移出")
+
+        member_ids = [m["standardized_row_id"] for m in source_members]
+        if row_id not in member_ids:
+            raise ValueError(f"成员 {row_id} 不属于源组 {source_group_id}")
+
+        # 原子移动
+        self.repo.remove_member(source_group_id, row_id)
+        self.repo.add_member(target_group_id, row_id)
+
+        # 触发失效传播
+        self._propagate_dirty(source["project_id"])
+
+        return GroupMoveMemberResponse(
+            source_group=self._to_response(source_group_id, source["project_id"]),
+            target_group=self._to_response(target_group_id, target["project_id"]),
+            moved_row_id=row_id,
+        )
+
     # ---- 私有方法 ----
 
     def _get_standardized_rows(self, project_id: str) -> list[dict]:
@@ -439,10 +480,12 @@ from fastapi import APIRouter, HTTPException, Depends
 from models.grouping import (
     CommodityGroupResponse,
     GroupingGenerateResponse,
+    GroupActionRequest,
     GroupConfirmResponse,
     GroupSplitRequest, GroupSplitResponse,
     GroupMergeRequest, GroupMergeResponse,
     GroupMarkNotComparableResponse,
+    GroupMoveMemberRequest, GroupMoveMemberResponse,
 )
 from services.grouping_service import GroupingService
 from api.deps import get_project_db
@@ -477,26 +520,21 @@ async def list_groups(project_id: str):
 
 
 @router.put("/groups/{group_id}/confirm", response_model=GroupConfirmResponse)
-async def confirm_group(group_id: str):
+async def confirm_group(group_id: str, body: GroupActionRequest):
     """确认归组"""
-    # 需要从 group 记录中获取 project_id
-    # 这里需要先查询 group 所属项目
-    from api.deps import get_app_data_dir
-    from db.database import Database
-    from db.group_repo import GroupRepo
-
-    # 遍历查找 group 所属项目（简化实现，生产环境可优化）
-    service = _find_service_for_group(group_id)
-    if not service:
+    service = _get_grouping_service(body.project_id)
+    group = service.repo.get_group_by_id(group_id)
+    if not group:
         raise HTTPException(status_code=404, detail="归组不存在")
     return service.confirm_group(group_id)
 
 
 @router.put("/groups/{group_id}/split", response_model=GroupSplitResponse)
 async def split_group(group_id: str, req: GroupSplitRequest):
-    """拆分归组"""
-    service = _find_service_for_group(group_id)
-    if not service:
+    """拆分归组。请求体含 project_id + new_groups"""
+    service = _get_grouping_service(req.project_id)
+    group = service.repo.get_group_by_id(group_id)
+    if not group:
         raise HTTPException(status_code=404, detail="归组不存在")
     try:
         return service.split_group(group_id, req.new_groups)
@@ -515,37 +553,29 @@ async def merge_groups(project_id: str, req: GroupMergeRequest):
 
 
 @router.put("/groups/{group_id}/not-comparable", response_model=GroupMarkNotComparableResponse)
-async def mark_not_comparable(group_id: str):
+async def mark_not_comparable(group_id: str, body: GroupActionRequest):
     """标记归组为不可比"""
-    service = _find_service_for_group(group_id)
-    if not service:
+    service = _get_grouping_service(body.project_id)
+    group = service.repo.get_group_by_id(group_id)
+    if not group:
         raise HTTPException(status_code=404, detail="归组不存在")
     return service.mark_not_comparable(group_id)
 
 
-def _find_service_for_group(group_id: str) -> GroupingService | None:
-    """根据 group_id 查找对应的 GroupingService（通过全局配置遍历项目）"""
-    import json
-    from api.deps import get_app_data_dir, get_project_db
-    from db.group_repo import GroupRepo
-
-    config_path = get_app_data_dir() / "config.json"
-    if not config_path.exists():
-        return None
-    config = json.loads(config_path.read_text(encoding="utf-8"))
-
-    for p in config.get("recent_projects", []):
-        from pathlib import Path
-        db_path = Path(p["path"]) / "project.db"
-        if not db_path.exists():
-            continue
-        from db.database import Database
-        db = Database(db_path)
-        repo = GroupRepo(db)
-        group = repo.get_group_by_id(group_id)
-        if group:
-            return GroupingService(db)
-    return None
+@router.put("/groups/{group_id}/move-member", response_model=GroupMoveMemberResponse)
+async def move_member(group_id: str, req: GroupMoveMemberRequest):
+    """
+    将成员从当前归组移动到目标归组（原子操作）。
+    前端拖拽完成后调用此 API，无需分两步 split + merge。
+    """
+    service = _get_grouping_service(req.project_id)
+    source = service.repo.get_group_by_id(group_id)
+    if not source:
+        raise HTTPException(status_code=404, detail="源归组不存在")
+    try:
+        return service.move_member(group_id, req.target_group_id, req.row_id)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 ```
 
 ### main.py 修改
@@ -694,21 +724,24 @@ class TestGroupingAPI:
             assert isinstance(group["member_count"], int)
 
     @pytest.mark.anyio
-    async def test_confirm_group(self, client_with_groups, first_group_id):
+    async def test_confirm_group(self, client_with_groups, project_id, first_group_id):
         """确认归组"""
-        resp = await client_with_groups.put(f"/api/groups/{first_group_id}/confirm")
+        resp = await client_with_groups.put(
+            f"/api/groups/{first_group_id}/confirm",
+            json={"project_id": project_id},
+        )
         assert resp.status_code == 200
         data = resp.json()
         assert data["status"] == "confirmed"
         assert data["confirmed_at"] is not None
 
     @pytest.mark.anyio
-    async def test_split_group(self, client_with_groups, group_with_2_members):
+    async def test_split_group(self, client_with_groups, project_id, group_with_2_members):
         """拆分归组"""
         group_id, row_ids = group_with_2_members
         resp = await client_with_groups.put(
             f"/api/groups/{group_id}/split",
-            json={"new_groups": [[row_ids[0]], [row_ids[1]]]},
+            json={"project_id": project_id, "new_groups": [[row_ids[0]], [row_ids[1]]]},
         )
         assert resp.status_code == 200
         data = resp.json()
@@ -728,26 +761,47 @@ class TestGroupingAPI:
         assert set(data["removed_group_ids"]) == set(two_group_ids)
 
     @pytest.mark.anyio
-    async def test_mark_not_comparable(self, client_with_groups, first_group_id):
+    async def test_mark_not_comparable(self, client_with_groups, project_id, first_group_id):
         """标记不可比"""
-        resp = await client_with_groups.put(f"/api/groups/{first_group_id}/not-comparable")
+        resp = await client_with_groups.put(
+            f"/api/groups/{first_group_id}/not-comparable",
+            json={"project_id": project_id},
+        )
         assert resp.status_code == 200
         data = resp.json()
         assert data["status"] == "not_comparable"
 
     @pytest.mark.anyio
-    async def test_confirm_nonexistent_group(self, client_with_groups):
+    async def test_confirm_nonexistent_group(self, client_with_groups, project_id):
         """确认不存在的归组 → 404"""
-        resp = await client_with_groups.put("/api/groups/nonexistent/confirm")
+        resp = await client_with_groups.put(
+            "/api/groups/nonexistent/confirm",
+            json={"project_id": project_id},
+        )
         assert resp.status_code == 404
 
     @pytest.mark.anyio
     async def test_dirty_propagation_after_confirm(self, client_with_groups, project_id, first_group_id):
         """确认归组后下游阶段应变为 dirty"""
-        await client_with_groups.put(f"/api/groups/{first_group_id}/confirm")
+        await client_with_groups.put(
+            f"/api/groups/{first_group_id}/confirm",
+            json={"project_id": project_id},
+        )
         resp = await client_with_groups.get(f"/api/projects/{project_id}")
         data = resp.json()
         assert data["stage_statuses"]["comparison_status"] == "dirty"
+
+    @pytest.mark.anyio
+    async def test_move_member(self, client_with_groups, project_id, group_with_2_members, another_group_id):
+        """成员移动"""
+        group_id, row_ids = group_with_2_members
+        resp = await client_with_groups.put(
+            f"/api/groups/{group_id}/move-member",
+            json={"project_id": project_id, "target_group_id": another_group_id, "row_id": row_ids[0]},
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["moved_row_id"] == row_ids[0]
 ```
 
 ### 门禁命令
@@ -773,6 +827,9 @@ pytest tests/test_group_repo.py tests/test_grouping_api.py -v -x
 | POST merge → 合并为 1 组 | 200 |
 | PUT not-comparable → status == "not_comparable" | 200 |
 | 确认后 → comparison_status == "dirty" | 失效传播生效 |
+| PUT move-member → 成员移动成功 | 200 |
+| move-member 源组仅 1 成员 → 400 | 400 |
+| move-member 目标组 confirmed → 400 | 400 |
 | 不存在的 group_id → 404 | 404 |
 
 ## 提交

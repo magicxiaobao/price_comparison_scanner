@@ -3,7 +3,7 @@
 ## 输入条件
 
 - Task 2.3 完成（规则管理 API 10 个端点就绪）
-- Task 2.9 完成或并行（RuleStore 就绪）
+- Task 2.9 完成（RuleStore + types/rule.ts 就绪）
 - Phase 0 前端骨架就绪（`app/rule-management.tsx` 占位页面已存在）
 - openapi.json 已包含规则 API 定义
 
@@ -16,7 +16,6 @@
 - 创建: `frontend/src/components/rules/rule-editor.tsx`
 - 创建: `frontend/src/components/rules/rule-test-panel.tsx`
 - 创建: `frontend/src/components/rules/import-export-panel.tsx`
-- 创建: `frontend/src/types/rule.ts`
 
 ## 禁止修改
 

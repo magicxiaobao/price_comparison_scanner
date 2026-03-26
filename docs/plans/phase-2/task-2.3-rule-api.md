@@ -1,4 +1,4 @@
-# Task 2.3: 规则管理 API（13 个端点）
+# Task 2.3: 规则管理 API（10 个端点）
 
 ## 输入条件
 
@@ -36,7 +36,7 @@ def _get_engine() -> RuleEngine:
     return RuleEngine(rules_dir)
 ```
 
-### 13 个端点定义
+### 10 个端点定义
 
 | # | 方法 | 路径 | 功能 | 请求体/参数 | 响应 |
 |---|------|------|------|------------|------|
@@ -50,8 +50,6 @@ def _get_engine() -> RuleEngine:
 | 8 | GET | `/api/rules/export` | 导出规则 JSON | 无 | JSON 文件下载 |
 | 9 | POST | `/api/rules/reset-default` | 恢复默认 | 无 | `RuleSet`（重置后） |
 | 10 | POST | `/api/rules/test` | 测试匹配 | `RuleTestRequest` | `RuleTestResponse` |
-
-**补充说明**：master-plan 列出 13 个端点，但技术架构 5.1 定义了 10 个端点。以技术架构为准，实际实现 10 个端点。3 个差额来自：部分端点合并（如 PUT /api/rules 同时支持新增和编辑）。
 
 ### 端点实现骨架
 

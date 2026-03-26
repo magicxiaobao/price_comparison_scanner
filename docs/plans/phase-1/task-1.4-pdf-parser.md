@@ -9,6 +9,7 @@
 
 - 修改: `backend/engines/document_parser.py`（填充 `_parse_pdf` 实现）
 - 修改: `backend/tests/test_document_parser.py`（新增 PDF 相关测试）
+- 修改: `backend/requirements-dev.txt`（新增 fpdf2>=2.8.0）
 
 ## 禁止修改
 

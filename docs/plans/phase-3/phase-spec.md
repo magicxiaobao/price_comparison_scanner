@@ -15,7 +15,7 @@
 - CommodityGrouper 引擎（文本归一化 + 多因子打分 + 硬约束 + 候选归组生成）
 - 品牌别名表 + 噪音词表（内置，不开放用户编辑）
 - 归组相关 Pydantic 模型（CommodityGroup, GroupMember, MatchScore 等）
-- 归组 API（生成候选 + 获取列表 + 确认 + 拆分 + 合并）
+- 归组 API（生成候选 + 获取列表 + 确认 + 拆分 + 合并 + 标记不可比 + 成员移动）
 - 归组数据库操作层（GroupRepo）
 - 归组服务层（GroupingService）
 - 前端 GroupingStage 组件（候选列表 + 拖拽交互 + 确认/拆分/合并/标记不可比）
@@ -66,7 +66,7 @@ frontend/src/
 ├── types/
 │   └── grouping.ts                 # 归组相关 TypeScript 类型
 └── stores/
-    └── grouping-store.ts           # 归组状态管理（可选，或扩展 project-store）
+    └── grouping-store.ts           # 归组状态管理（独立 store）
 ```
 
 ---
@@ -208,7 +208,9 @@ assert '/api/projects/{id}/groups' in paths, 'Missing groups list'
 assert '/api/groups/{id}/confirm' in paths, 'Missing confirm'
 assert '/api/groups/{id}/split' in paths, 'Missing split'
 assert '/api/projects/{id}/grouping/merge' in paths, 'Missing merge'
-print(f'✓ openapi.json 归组 API: 5 个路径已定义')
+assert '/api/groups/{id}/not-comparable' in paths, 'Missing not-comparable'
+assert '/api/groups/{id}/move-member' in paths, 'Missing move-member'
+print(f'✓ openapi.json 归组 API: 7 个路径已定义')
 "
 ```
 

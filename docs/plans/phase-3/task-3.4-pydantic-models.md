@@ -89,11 +89,14 @@ class GroupSplitRequest(BaseModel):
 
     将一个归组拆分为多个新组。new_groups 中每个元素是一组 standardized_row_id。
     """
+    project_id: str = Field(..., alias="projectId")
     new_groups: list[list[str]] = Field(
         ...,
         min_length=2,
         description="拆分后的新组，每组为 standardized_row_id 列表，至少拆为 2 组",
     )
+
+    model_config = {"populate_by_name": True}
 
 
 class GroupSplitResponse(BaseModel):
@@ -124,6 +127,31 @@ class GroupMarkNotComparableResponse(BaseModel):
     """标记不可比响应"""
     id: str
     status: str  # "not_comparable"
+
+
+class GroupActionRequest(BaseModel):
+    """归组操作通用请求（confirm / not-comparable 等需要 project_id 的操作）"""
+    project_id: str = Field(..., alias="projectId")
+
+    model_config = {"populate_by_name": True}
+
+
+class GroupMoveMemberRequest(BaseModel):
+    """成员移动请求"""
+    project_id: str = Field(..., alias="projectId")
+    target_group_id: str = Field(..., alias="targetGroupId")
+    row_id: str = Field(..., alias="rowId")
+
+    model_config = {"populate_by_name": True}
+
+
+class GroupMoveMemberResponse(BaseModel):
+    """成员移动响应"""
+    source_group: CommodityGroupResponse = Field(..., alias="sourceGroup")
+    target_group: CommodityGroupResponse = Field(..., alias="targetGroup")
+    moved_row_id: str = Field(..., alias="movedRowId")
+
+    model_config = {"populate_by_name": True}
 ```
 
 **设计要点：**

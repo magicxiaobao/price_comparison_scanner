@@ -35,7 +35,7 @@ export interface SupplierFile {
   supplier_confirmed: boolean;
   original_filename: string;
   file_path: string;
-  file_type: 'xlsx' | 'docx' | 'pdf' | 'image';
+  file_type: 'xlsx' | 'docx' | 'pdf' | 'image'; // image: Phase 5 OCR 模块支持，当前阶段上传器不接受
   recognition_mode: 'structure' | 'ocr' | 'manual' | null;
   imported_at: string;
 }

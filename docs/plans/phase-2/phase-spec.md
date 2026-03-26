@@ -12,7 +12,7 @@
 
 - AuditLogService 操作留痕（审计日志写入 audit_logs 表）
 - RuleEngine 引擎（规则加载 / 匹配 / 冲突解决 / 项目级覆盖）
-- 规则管理 API（13 个端点：CRUD + 模板 + 导入导出 + 测试）
+- 规则管理 API（10 个端点：CRUD + 模板 + 导入导出 + 测试）
 - TableStandardizer 引擎（列名映射 + 值标准化 + 总价自动计算 + source_location 追溯 + 规则快照）
 - 标准化 API + 手工修正 API + 失效传播
 - 标准化相关 Pydantic 模型（StandardizedRow、SourceLocation、Rule、RuleSet、MatchResult 等）
@@ -48,7 +48,7 @@ backend/
 │   ├── rule.py                   # 规则相关 Pydantic 模型
 │   └── standardization.py        # 标准化相关 Pydantic 模型
 ├── api/
-│   ├── rules.py                  # 规则管理 13 个端点
+│   ├── rules.py                  # 规则管理 10 个端点
 │   └── standardization.py        # 标准化 + 手工修正 API
 ├── db/
 │   ├── audit_log_repo.py         # 审计日志 CRUD
@@ -101,11 +101,11 @@ app_data/rules/
 |------|------|--------|------|
 | 2.1 | AuditLogService 操作留痕 | backend-dev | Phase 1 |
 | 2.2 | RuleEngine — 规则加载/管理/冲突解决 | backend-dev | Phase 1 |
-| 2.3 | 规则管理 API（13 个端点） | backend-dev | 2.2 |
+| 2.3 | 规则管理 API（10 个端点） | backend-dev | 2.2 |
 | 2.4 | TableStandardizer — 字段映射 + 值标准化 | backend-dev | 2.2 |
-| 2.5 | 标准化 API + 手工修正 API + 失效传播 | backend-dev | 2.1, 2.4 |
+| 2.5 | 标准化 API + 手工修正 API + 失效传播 | backend-dev | 2.1, 2.4, 2.6 |
 | 2.6 | 标准化相关 Pydantic 模型 | backend-dev | Phase 1 |
-| 2.7 | 前端 RuleManagement 页面 | frontend-dev | 2.3 |
+| 2.7 | 前端 RuleManagement 页面 | frontend-dev | 2.3, 2.9 |
 | 2.8 | 前端 StandardizeStage — 预览 + 可编辑表格 + 手工修正 | frontend-dev | 2.5 |
 | 2.9 | 前端 RuleStore | frontend-dev | 2.3 |
 | 2.10 | 更新 openapi.json + reviewer 审查 | backend-dev | 2.5 |
@@ -129,7 +129,7 @@ Phase 1 完成
   ┌─────────────────────────────────────────────┤
   │                                             │
   2.9 RuleStore ──── 2.7 RuleManagement 页面    │
-       (依赖 2.3)         (依赖 2.3)            │
+       (依赖 2.3)         (依赖 2.3, 2.9)       │
                                                 │
                                            2.8 StandardizeStage
                                                 (依赖 2.5)
@@ -140,8 +140,9 @@ Phase 1 完成
 - **第一波（并行）：** 2.1（AuditLog）+ 2.2（RuleEngine）+ 2.6（Pydantic 模型）— 三者仅依赖 Phase 1，互相独立
 - **第二波（并行）：** 2.3（规则 API，依赖 2.2）+ 2.4（Standardizer，依赖 2.2）— 两者仅依赖 2.2
 - **第三波：** 2.5（标准化 API，依赖 2.1 + 2.4）
-- **第四波（并行）：** 2.7（RuleManagement 页面）+ 2.8（StandardizeStage）+ 2.9（RuleStore）— 前端任务，依赖 API 就绪
-- **第五波：** 2.10（openapi + reviewer 审查）
+- **第四波：** 2.9（RuleStore，依赖 2.3）— 前端状态管理基础
+- **第五波（并行）：** 2.7（RuleManagement 页面，依赖 2.9）+ 2.8（StandardizeStage，依赖 2.5）— 前端页面
+- **第六波：** 2.10（openapi + reviewer 审查）
 
 ---
 

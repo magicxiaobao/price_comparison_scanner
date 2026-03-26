@@ -89,6 +89,11 @@ class RawTableResponse(BaseModel):
     supplier_confirmed: Optional[bool] = None
 
 
+class TableToggleRequest(BaseModel):
+    """表格选择切换请求"""
+    project_id: str
+
+
 class TableToggleResponse(BaseModel):
     """表格选择切换响应"""
     table_id: str

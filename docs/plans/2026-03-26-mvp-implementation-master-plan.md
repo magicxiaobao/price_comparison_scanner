@@ -1,3 +1,7 @@
+> ⚠️ **DEPRECATED — 本文件仅供历史参考，不作为 agent 执行依据。**
+> 各 Phase 的正式规格已迁移到 `phase-N/phase-spec.md` 和 `phase-N/task-*.md`。
+> **当本文件与 phase-spec / task-spec 内容冲突时，以 phase-spec / task-spec 为准。**
+
 # MVP 全量实施计划（Master Plan）
 
 > **文档定位：** 总排期与总任务图。不直接作为 agent 执行依据，每个 Phase 有独立的 phase-spec，每个 Task 有独立的 task-spec。
@@ -91,7 +95,7 @@ pnpm test --run                 # 测试（全部通过，若有测试）
 ```bash
 cd backend
 python scripts/generate_openapi.py
-git diff --exit-code ../docs/api/openapi.json  # 若有 diff，必须提交更新
+git diff --exit-code docs/api/openapi.json  # 若有 diff，必须提交更新
 ```
 
 ### 依赖管理
@@ -231,17 +235,19 @@ test -f docs/api/openapi.json  # openapi.json 存在
 - 标准化相关 Pydantic 模型（StandardizedRow, SourceLocation, Rule 等）
 - 前端 RuleManagement 页面 + StandardizeStage
 
+> **注意：** 本章节的任务编号和描述与 `docs/plans/phase-2/phase-spec.md` 保持一致。详细规格见各 task-spec 文件。当内容冲突时，以 phase-spec 和 task-spec 为准。
+
 **任务列表：**
 
 | Task | 名称 | 负责人 | 依赖 |
 |------|------|--------|------|
 | 2.1 | AuditLogService 操作留痕 | backend-dev | Phase 1 |
 | 2.2 | RuleEngine — 规则加载/管理/冲突解决 | backend-dev | Phase 1 |
-| 2.3 | 规则管理 API（13 个端点） | backend-dev | 2.2 |
+| 2.3 | 规则管理 API（10 个端点） | backend-dev | 2.2 |
 | 2.4 | TableStandardizer — 字段映射 + 值标准化 | backend-dev | 2.2 |
-| 2.5 | 标准化 API + 手工修正 API + 失效传播 | backend-dev | 2.1, 2.4 |
+| 2.5 | 标准化 API + 手工修正 API + 失效传播 | backend-dev | 2.1, 2.4, 2.6 |
 | 2.6 | 标准化相关 Pydantic 模型 | backend-dev | Phase 1 |
-| 2.7 | 前端 RuleManagement 页面 | frontend-dev | 2.3 |
+| 2.7 | 前端 RuleManagement 页面 | frontend-dev | 2.3, 2.9 |
 | 2.8 | 前端 StandardizeStage — 预览 + 可编辑表格 + 手工修正 | frontend-dev | 2.5 |
 | 2.9 | 前端 RuleStore | frontend-dev | 2.3 |
 | 2.10 | 更新 openapi.json + reviewer 审查 | backend-dev | 2.5 |

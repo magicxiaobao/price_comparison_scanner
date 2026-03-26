@@ -93,22 +93,19 @@ interface DraggableMemberProps {
 
 ### 拖拽实现的 API 调用逻辑
 
-成员移动的后端操作分解：
+成员移动通过单一原子 API 完成：
 
 ```
 用户将成员 M 从归组 A 拖到归组 B：
 
-1. 如果 A 只有 1 个成员 → 阻止拖拽（前端校验）
-2. 从 A 拆分：PUT /api/groups/{A}/split
-   new_groups: [[...A剩余成员], [M]]
-   → 产生新组 A' 和临时组 T
-3. 将 T 合并到 B：POST /api/projects/{id}/grouping/merge
-   group_ids: [T.id, B.id]
-   → 产生合并组 B'
-4. 刷新列表
+1. 前端校验：A 成员数 > 1，B 状态非 confirmed/not_comparable
+2. 调用 PUT /api/groups/{A}/move-member
+   请求体: { projectId, targetGroupId: B.id, rowId: M.id }
+3. 后端原子执行：从 A 移除 M → 添加 M 到 B → 失效传播
+4. 刷新归组列表
 ```
 
-**简化方案**（推荐）：在 GroupingService 中新增一个 `move_member` 方法，一次操作完成拆分+合并，避免前端做两次 API 调用。但本 Task 先用拆分+合并两步实现，如果体验不好在 reviewer 审查后优化。
+无需前端编排多步 API 调用，不存在半完成状态风险。
 
 ### 视觉反馈
 

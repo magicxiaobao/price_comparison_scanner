@@ -212,6 +212,12 @@ class FieldModifyResponse(BaseModel):
 class StandardizeRequest(BaseModel):
     """标准化执行请求（异步）"""
     force: bool = False              # 是否强制重新标准化（覆盖已有结果）
+
+class StandardizeTaskResponse(BaseModel):
+    """标准化执行响应"""
+    task_id: str = Field(..., alias="taskId")
+
+    model_config = {"populate_by_name": True}
 ```
 
 **设计要点：**

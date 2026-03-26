@@ -288,21 +288,21 @@ with open('../docs/api/openapi.json') as f:
     spec = json.load(f)
 paths = list(spec.get('paths', {}).keys())
 # 需求标准 API
-assert '/api/projects/{id}/requirements' in paths, 'Missing requirements'
-assert '/api/requirements/{id}' in paths, 'Missing requirement by id'
-assert '/api/projects/{id}/requirements/import' in paths, 'Missing requirements import'
-assert '/api/projects/{id}/requirements/export' in paths, 'Missing requirements export'
+assert '/api/projects/{project_id}/requirements' in paths, 'Missing requirements'
+assert '/api/requirements/{requirement_id}' in paths, 'Missing requirement by id'
+assert '/api/projects/{project_id}/requirements/import' in paths, 'Missing requirements import'
+assert '/api/projects/{project_id}/requirements/export' in paths, 'Missing requirements export'
 # 符合性 API
-assert '/api/projects/{id}/compliance/evaluate' in paths, 'Missing compliance evaluate'
-assert '/api/projects/{id}/compliance/matrix' in paths, 'Missing compliance matrix'
-assert '/api/compliance/{id}/confirm' in paths, 'Missing compliance confirm'
-assert '/api/compliance/{id}/accept' in paths, 'Missing compliance accept'
+assert '/api/projects/{project_id}/compliance/evaluate' in paths, 'Missing compliance evaluate'
+assert '/api/projects/{project_id}/compliance/matrix' in paths, 'Missing compliance matrix'
+assert '/api/compliance/{match_id}/confirm' in paths, 'Missing compliance confirm'
+assert '/api/compliance/{match_id}/accept' in paths, 'Missing compliance accept'
 # 比价 API
-assert '/api/projects/{id}/comparison/generate' in paths, 'Missing comparison generate'
-assert '/api/projects/{id}/comparison' in paths, 'Missing comparison'
+assert '/api/projects/{project_id}/comparison/generate' in paths, 'Missing comparison generate'
+assert '/api/projects/{project_id}/comparison' in paths, 'Missing comparison'
 # 导出 + 问题
-assert '/api/projects/{id}/export' in paths, 'Missing export'
-assert '/api/projects/{id}/problems' in paths, 'Missing problems'
+assert '/api/projects/{project_id}/export' in paths, 'Missing export'
+assert '/api/projects/{project_id}/problems' in paths, 'Missing problems'
 print(f'✓ openapi.json Phase 4 API: 12 个路径已定义')
 "
 ```

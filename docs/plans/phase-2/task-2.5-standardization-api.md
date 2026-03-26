@@ -72,9 +72,10 @@ class ProjectService:
         1. 获取项目所有已选择的 raw_tables
         2. 若 force=True 或无已有结果，清除旧数据
         3. 对每个 raw_table 调用 TableStandardizer.standardize()
-        4. 通过 StandardizedRowRepo 批量写入
-        5. AuditLogService 记录操作（action_type='standardize', action_source='system'）
-        6. 更新 normalize_status='completed'
+        4. 取出 column_mapping_info，写入 raw_tables.column_mapping_info 字段（JSON）
+        5. 通过 StandardizedRowRepo 批量写入 rows
+        6. AuditLogService 记录操作（action_type='standardize', action_source='system'）
+        7. 更新 normalize_status='completed'
         返回 task_id
         """
         ...
@@ -130,30 +131,31 @@ class ProjectService:
 ```python
 from fastapi import APIRouter, HTTPException
 from models.standardization import (
-    StandardizeRequest, StandardizedRowResponse, FieldModifyRequest, FieldModifyResponse,
+    StandardizeRequest, StandardizeTaskResponse, StandardizedRowResponse,
+    FieldModifyRequest, FieldModifyResponse,
 )
 from services.project_service import ProjectService
 
 router = APIRouter(tags=["标准化"])
 service = ProjectService()
 
-@router.post("/projects/{project_id}/standardize")
+@router.post("/projects/{project_id}/standardize", response_model=StandardizeTaskResponse)
 async def run_standardization(project_id: str, req: StandardizeRequest | None = None):
     """
     执行标准化（异步）。
-    返回 {"taskId": "..."}
+    返回 task_id。
     """
     force = req.force if req else False
     task_id = service.run_standardization(project_id, force=force)
-    return {"taskId": task_id}
+    return StandardizeTaskResponse(task_id=task_id)
 
-@router.get("/projects/{project_id}/standardized-rows")
+@router.get("/projects/{project_id}/standardized-rows", response_model=list[StandardizedRowResponse])
 async def get_standardized_rows(project_id: str):
     """获取标准化结果"""
     rows = service.get_standardized_rows(project_id)
     return rows
 
-@router.put("/standardized-rows/{row_id}")
+@router.put("/standardized-rows/{row_id}", response_model=FieldModifyResponse)
 async def modify_standardized_row(row_id: str, req: FieldModifyRequest):
     """
     手工修正字段值。
@@ -161,6 +163,15 @@ async def modify_standardized_row(row_id: str, req: FieldModifyRequest):
     """
     result = service.modify_standardized_row(row_id, req.field, req.new_value)
     return result
+
+@router.get("/projects/{project_id}/column-mapping-info")
+async def get_column_mapping_info(project_id: str):
+    """
+    获取项目的列名映射信息（供 ColumnMappingPanel 使用）。
+    返回每个 raw_table 的映射状态：confirmed / unmapped / conflict。
+    """
+    info = service.get_column_mapping_info(project_id)
+    return info
 ```
 
 ### main.py 修改

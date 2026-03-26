@@ -417,6 +417,8 @@ class ComplianceService:
 
 ### api/requirements.py
 
+**注意：** `RequirementUpdate` 必须包含 `project_id` 字段（在 Task 4.11 Pydantic 模型中定义）。`delete_requirement` 通过查询参数 `?project_id=xxx` 传入。
+
 ```python
 from fastapi import APIRouter, HTTPException, UploadFile, File
 from fastapi.responses import FileResponse
@@ -451,8 +453,10 @@ async def list_requirements(project_id: str):
 
 @router.put("/requirements/{req_id}", response_model=RequirementResponse)
 async def update_requirement(req_id: str, req: RequirementUpdate):
-    service = _find_service_for_requirement(req_id)
-    if not service:
+    """更新需求项。请求体含 project_id"""
+    service = _get_service(req.project_id)
+    item = service.repo.get_by_id(req_id)
+    if not item:
         raise HTTPException(status_code=404, detail="需求项不存在")
     try:
         return service.update_requirement(req_id, req)
@@ -461,9 +465,11 @@ async def update_requirement(req_id: str, req: RequirementUpdate):
 
 
 @router.delete("/requirements/{req_id}")
-async def delete_requirement(req_id: str):
-    service = _find_service_for_requirement(req_id)
-    if not service:
+async def delete_requirement(req_id: str, project_id: str):
+    """删除需求项。project_id 通过查询参数传入"""
+    service = _get_service(project_id)
+    item = service.repo.get_by_id(req_id)
+    if not item:
         raise HTTPException(status_code=404, detail="需求项不存在")
     deleted = service.delete_requirement(req_id)
     if not deleted:
@@ -496,28 +502,6 @@ async def export_requirements(project_id: str):
     return FileResponse(output_path, filename="需求标准模板.xlsx")
 
 
-def _find_service_for_requirement(req_id: str) -> ComplianceService | None:
-    """根据 req_id 查找对应的 ComplianceService"""
-    import json
-    from pathlib import Path
-    from db.database import Database
-    from db.requirement_repo import RequirementRepo
-
-    config_path = get_app_data_dir() / "config.json"
-    if not config_path.exists():
-        return None
-    config = json.loads(config_path.read_text(encoding="utf-8"))
-
-    for p in config.get("recent_projects", []):
-        db_path = Path(p["path"]) / "project.db"
-        if not db_path.exists():
-            continue
-        db = Database(db_path)
-        repo = RequirementRepo(db)
-        row = repo.get_by_id(req_id)
-        if row:
-            return ComplianceService(db)
-    return None
 ```
 
 ### main.py 修改
@@ -645,22 +629,28 @@ class TestRequirementsAPI:
         assert len(data) >= 1
 
     @pytest.mark.anyio
-    async def test_update_requirement(self, client_with_requirements, first_req_id):
+    async def test_update_requirement(self, client_with_requirements, first_req_id, project_id):
         resp = await client_with_requirements.put(
             f"/api/requirements/{first_req_id}",
-            json={"title": "修改后标题"},
+            json={"project_id": project_id, "title": "修改后标题"},
         )
         assert resp.status_code == 200
         assert resp.json()["title"] == "修改后标题"
 
     @pytest.mark.anyio
-    async def test_delete_requirement(self, client_with_requirements, first_req_id):
-        resp = await client_with_requirements.delete(f"/api/requirements/{first_req_id}")
+    async def test_delete_requirement(self, client_with_requirements, first_req_id, project_id):
+        resp = await client_with_requirements.delete(
+            f"/api/requirements/{first_req_id}",
+            params={"project_id": project_id},
+        )
         assert resp.status_code == 200
 
     @pytest.mark.anyio
-    async def test_delete_nonexistent(self, client_with_project):
-        resp = await client_with_project.delete("/api/requirements/nonexistent")
+    async def test_delete_nonexistent(self, client_with_project, project_id):
+        resp = await client_with_project.delete(
+            "/api/requirements/nonexistent",
+            params={"project_id": project_id},
+        )
         assert resp.status_code == 404
 
     @pytest.mark.anyio

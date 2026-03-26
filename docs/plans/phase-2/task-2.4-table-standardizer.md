@@ -29,6 +29,15 @@ from models.standardization import (
     StandardizedRowCreate, SourceLocationItem, SourceLocation, HitRuleSnapshot,
 )
 from engines.rule_engine import RuleEngine
+from dataclasses import dataclass, field as dc_field
+
+@dataclass
+class StandardizeResult:
+    """standardize() 的返回值"""
+    rows: list[StandardizedRowCreate]
+    column_mapping: dict[str, str]                    # {原始列名: 标准字段名}
+    column_mapping_info: list[dict]                   # ColumnMappingInfo 列表，供前端展示
+    mapping_issues: list[dict] = dc_field(default_factory=list)  # unmapped / conflict 问题
 
 # 9 个标准字段
 STANDARD_FIELDS = [
@@ -75,10 +84,10 @@ class TableStandardizer:
         table_index: int = 0,
         rules: RuleSet | None = None,
         project_rules: RuleSet | None = None,
-    ) -> list[StandardizedRowCreate]:
+    ) -> "StandardizeResult":
         """
         标准化入口。
-        返回 StandardizedRowCreate 列表。
+        返回 StandardizeResult，包含标准化行列表和列名映射信息。
         """
         if rules is None:
             rules = self.rule_engine.load_global_rules()
@@ -107,7 +116,17 @@ class TableStandardizer:
             )
             result.append(std_row)
 
-        return result
+        # 构建列名映射信息（供前端 ColumnMappingPanel 使用）
+        column_mapping_info = self._build_column_mapping_info(
+            headers, column_mapping, hit_snapshots, mapping_issues
+        )
+
+        return StandardizeResult(
+            rows=result,
+            column_mapping=column_mapping,
+            column_mapping_info=column_mapping_info,
+            mapping_issues=mapping_issues,
+        )
 
     def _map_columns(
         self,
@@ -279,6 +298,40 @@ class TableStandardizer:
                 col=col_index,
                 extraction_mode="structure",
             )
+
+    def _build_column_mapping_info(
+        self,
+        headers: list[str],
+        column_mapping: dict[str, str],
+        hit_snapshots: list[HitRuleSnapshot],
+        issues: list[dict],
+    ) -> list[dict]:
+        """
+        构建前端 ColumnMappingPanel 所需的列名映射信息。
+        每个原始列名对应一条 ColumnMappingInfo：
+        - status: confirmed（规则匹配成功） / unmapped（未映射） / conflict（冲突）
+        """
+        issue_map = {i["header"]: i for i in issues}
+        snapshot_map = {s.match_content.split("→")[0]: s for s in hit_snapshots if "→" in s.match_content}
+
+        result = []
+        for header in headers:
+            info: dict = {"originalColumn": header, "targetField": None, "matchedRule": None, "matchMode": None, "status": "unmapped"}
+            if header in column_mapping:
+                info["targetField"] = column_mapping[header]
+                info["status"] = "confirmed"
+                if header in snapshot_map:
+                    snap = snapshot_map[header]
+                    info["matchedRule"] = snap.rule_name
+                    info["matchMode"] = snap.match_mode
+            if header in issue_map:
+                issue = issue_map[header]
+                if issue["type"] == "conflict":
+                    info["status"] = "conflict"
+                elif issue["type"] == "unmapped":
+                    info["status"] = "unmapped"
+            result.append(info)
+        return result
 
     @staticmethod
     def _index_to_cell(row: int, col: int) -> str:

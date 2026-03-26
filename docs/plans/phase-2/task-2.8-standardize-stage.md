@@ -3,7 +3,7 @@
 ## 输入条件
 
 - Task 2.5 完成（标准化 API + 手工修正 API 就绪）
-- Task 2.9 完成或并行（RuleStore 就绪）
+- Task 2.9 完成（RuleStore 就绪，弱依赖 — 仅读取规则用于显示，不修改规则）
 - Phase 0 前端骨架就绪（`components/stages/` 目录已存在）
 - openapi.json 已包含标准化 API 定义
 
@@ -127,6 +127,8 @@ export interface FieldModifyResponse {
 - 阶段状态集成：标准化完成后更新 `normalize_status` → 刷新 ProjectStore
 
 ### components/stages/column-mapping-panel.tsx
+
+**数据来源：** 列名映射信息通过 `GET /api/projects/{id}/column-mapping-info` 获取。后端在标准化时由 `TableStandardizer._build_column_mapping_info()` 生成，包含每个原始列名的映射状态（confirmed / unmapped / conflict）。前端直接消费 `ColumnMappingInfo[]` 渲染。
 
 **功能：**
 - 展示当前供应商文件的列名映射关系

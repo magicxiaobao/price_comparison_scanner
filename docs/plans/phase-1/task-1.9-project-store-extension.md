@@ -3,6 +3,7 @@
 ## 输入条件
 
 - Task 1.7 完成（ImportStage 文件上传就绪）
+- Task 1.8 完成（供应商确认 + 表格选择 UI 就绪）
 - Phase 0 前端 ProjectStore 最小接口就绪
 
 ## 输出物

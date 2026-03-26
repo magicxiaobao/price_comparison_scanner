@@ -137,6 +137,9 @@ Phase 0 完成
 ### 后端验收
 
 ```bash
+# 验收在 DEV_MODE=1 下执行（跳过 session token 认证）
+export DEV_MODE=1
+
 cd backend
 
 # 1. 工程门禁全部通过

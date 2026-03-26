@@ -87,6 +87,13 @@ class FileRepo:
             )
         return self.get_by_id(file_id)
 
+    def update_recognition_mode(self, file_id: str, mode: str) -> None:
+        with self.db.transaction() as conn:
+            conn.execute(
+                "UPDATE supplier_files SET recognition_mode = ? WHERE id = ?",
+                (mode, file_id),
+            )
+
     def delete(self, file_id: str) -> bool:
         with self.db.transaction() as conn:
             cursor = conn.execute("DELETE FROM supplier_files WHERE id = ?", (file_id,))
@@ -170,7 +177,7 @@ from db.file_repo import FileRepo
 from db.table_repo import TableRepo
 from engines.document_parser import DocumentParser
 from engines.task_manager import get_task_manager
-from api.deps import get_app_data_dir
+from config import get_app_data_dir
 
 
 class FileService:
@@ -238,12 +245,19 @@ class FileService:
         """
         异步解析任务的执行体。
         解析文件 → 将 RawTableData 写入 raw_tables 表。
+        PDF L1 未识别到表格时，标记 recognition_mode = "manual"。
         """
         tables = self._parser.parse(file_path, progress_callback)
 
         project_dir = get_app_data_dir() / "projects" / project_id
         db = Database(project_dir / "project.db")
+        file_repo = FileRepo(db)
         table_repo = TableRepo(db)
+
+        # PDF L1 空结果处理：标记为手动处理
+        if not tables and file_path.lower().endswith(".pdf"):
+            file_repo.update_recognition_mode(file_id, "manual")
+            return {"file_id": file_id, "table_count": 0, "table_ids": []}
 
         table_ids = []
         for t in tables:
@@ -314,22 +328,29 @@ class FileService:
         return name if name else "未知供应商"
 ```
 
+**注意：** 本任务 API 路由全面使用 Task 1.6 定义的 Pydantic 模型作为请求体和 `response_model`。`TableToggleRequest` 需在 Task 1.6 的 `models/table.py` 中补充定义（见下方 API 代码）。
+
 ### api/files.py
 
 ```python
 from fastapi import APIRouter, HTTPException, UploadFile, File, Path as PathParam
 from services.file_service import FileService
 from services.project_service import ProjectService
+from models.file import (
+    FileUploadResponse,
+    SupplierConfirmRequest,
+    SupplierFileResponse,
+)
+from models.table import RawTableResponse, TableToggleRequest, TableToggleResponse
 
 router = APIRouter(tags=["文件导入"])
 file_service = FileService()
 project_service = ProjectService()
 
 
-@router.post("/projects/{project_id}/files")
+@router.post("/projects/{project_id}/files", response_model=FileUploadResponse)
 async def upload_file(project_id: str, file: UploadFile = File(...)):
     """上传供应商文件，异步解析，返回 task_id 和 file_id"""
-    # 校验项目存在
     project = project_service.get_project(project_id)
     if not project:
         raise HTTPException(status_code=404, detail="项目不存在")
@@ -343,7 +364,7 @@ async def upload_file(project_id: str, file: UploadFile = File(...)):
     return result
 
 
-@router.get("/projects/{project_id}/files")
+@router.get("/projects/{project_id}/files", response_model=list[SupplierFileResponse])
 async def list_files(project_id: str):
     """获取项目的所有已导入文件"""
     project = project_service.get_project(project_id)
@@ -352,25 +373,16 @@ async def list_files(project_id: str):
     return file_service.get_files(project_id)
 
 
-@router.put("/files/{file_id}/confirm-supplier")
-async def confirm_supplier(file_id: str, body: dict):
-    """确认供应商名称。请求体: {"supplier_name": "xxx", "project_id": "xxx"}"""
-    supplier_name = body.get("supplier_name")
-    project_id = body.get("project_id")
-    if not supplier_name or not project_id:
-        raise HTTPException(status_code=400, detail="supplier_name 和 project_id 必填")
-
-    result = file_service.confirm_supplier(file_id, supplier_name, project_id)
+@router.put("/files/{file_id}/confirm-supplier", response_model=SupplierFileResponse)
+async def confirm_supplier(file_id: str, body: SupplierConfirmRequest):
+    """确认供应商名称"""
+    result = file_service.confirm_supplier(file_id, body.supplier_name, body.project_id)
     if not result:
         raise HTTPException(status_code=404, detail="文件不存在")
-    return {
-        "file_id": result["id"],
-        "supplier_name": result["supplier_name"],
-        "supplier_confirmed": bool(result["supplier_confirmed"]),
-    }
+    return result
 
 
-@router.get("/projects/{project_id}/tables")
+@router.get("/projects/{project_id}/tables", response_model=list[RawTableResponse])
 async def list_tables(project_id: str):
     """获取项目的所有解析表格"""
     project = project_service.get_project(project_id)
@@ -379,20 +391,13 @@ async def list_tables(project_id: str):
     return file_service.get_tables(project_id)
 
 
-@router.put("/tables/{table_id}/toggle-selection")
-async def toggle_table_selection(table_id: str, body: dict):
-    """切换表格参与比价状态。请求体: {"project_id": "xxx"}"""
-    project_id = body.get("project_id")
-    if not project_id:
-        raise HTTPException(status_code=400, detail="project_id 必填")
-
-    result = file_service.toggle_table_selection(table_id, project_id)
+@router.put("/tables/{table_id}/toggle-selection", response_model=TableToggleResponse)
+async def toggle_table_selection(table_id: str, body: TableToggleRequest):
+    """切换表格参与比价状态"""
+    result = file_service.toggle_table_selection(table_id, body.project_id)
     if not result:
         raise HTTPException(status_code=404, detail="表格不存在")
-    return {
-        "table_id": result["id"],
-        "selected": bool(result["selected"]),
-    }
+    return result
 ```
 
 ### main.py 修改

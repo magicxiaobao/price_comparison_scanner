@@ -17,6 +17,8 @@
 - 创建: `frontend/src-tauri/target/release/bundle/`（Tauri 打包产物）
 - 创建: `scripts/build.sh`（一键打包脚本）
 
+**平台范围说明：** 本 Task 提供 `scripts/build.sh` 覆盖 macOS 和 Linux 打包。Windows 打包命令在上文中已列出（PowerShell），但不提供独立 `scripts/build.ps1` 脚本。各平台在对应原生环境上编译，不做交叉编译。
+
 ## 禁止修改
 
 - 不修改 `backend/` 源代码（仅打包，不改功能）

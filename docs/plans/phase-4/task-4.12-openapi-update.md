@@ -36,18 +36,18 @@ paths = list(spec.get('paths', {}).keys())
 
 # Phase 4 新增路径验证
 required_paths = [
-    '/api/projects/{id}/requirements',
-    '/api/requirements/{id}',
-    '/api/projects/{id}/requirements/import',
-    '/api/projects/{id}/requirements/export',
-    '/api/projects/{id}/compliance/evaluate',
-    '/api/projects/{id}/compliance/matrix',
-    '/api/compliance/{id}/confirm',
-    '/api/compliance/{id}/accept',
-    '/api/projects/{id}/comparison/generate',
-    '/api/projects/{id}/comparison',
-    '/api/projects/{id}/export',
-    '/api/projects/{id}/problems',
+    '/api/projects/{project_id}/requirements',
+    '/api/requirements/{requirement_id}',
+    '/api/projects/{project_id}/requirements/import',
+    '/api/projects/{project_id}/requirements/export',
+    '/api/projects/{project_id}/compliance/evaluate',
+    '/api/projects/{project_id}/compliance/matrix',
+    '/api/compliance/{match_id}/confirm',
+    '/api/compliance/{match_id}/accept',
+    '/api/projects/{project_id}/comparison/generate',
+    '/api/projects/{project_id}/comparison',
+    '/api/projects/{project_id}/export',
+    '/api/projects/{project_id}/problems',
 ]
 
 missing = [p for p in required_paths if p not in paths]

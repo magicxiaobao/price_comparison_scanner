@@ -87,7 +87,8 @@ class PriceComparator:
         group: commodity_groups 表记录
         supplier_rows_map: {supplier_file_id: [standardized_row, ...]}
         eligible_supplier_ids: 有资格参与有效最低价的供应商 ID 列表（来自 ComplianceEvaluator）
-                               None 表示无需求标准，所有供应商都参与
+                               None — 跳过符合性模块（无需求标准），effective_min_price = min_price
+                               [] — 有需求标准但无任何供应商满足全部必选项，effective_min_price = None
         """
         # 1. 收集各供应商报价
         prices: list[SupplierPriceData] = []
@@ -119,8 +120,11 @@ class PriceComparator:
 
         # 4. 计算有效最低价
         if eligible_supplier_ids is None:
-            # 无需求标准 → 有效最低价 = 全量最低价
+            # None: 跳过符合性 → 有效最低价 = 全量最低价
             effective_min_price = min_price
+        elif len(eligible_supplier_ids) == 0:
+            # []: 有需求标准但无合格供应商 → 无有效最低价
+            effective_min_price = None
         else:
             eligible_prices = [
                 p.unit_price for p in prices

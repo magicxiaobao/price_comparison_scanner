@@ -21,6 +21,16 @@
 
 ## 实现规格
 
+**前置字段依赖约束：** ProblemService 仅依赖前序 Phase 已稳定的字段和表结构进行查询，不在本 Task 内发明新的存储字段或修改 schema。具体依赖：
+- `supplier_files.supplier_confirmed`（Phase 1）
+- `standardized_rows.column_mapping`、`standardized_rows.confidence`、`standardized_rows.needs_review`（Phase 2）
+- `commodity_groups.status`（Phase 3）
+- `comparison_results.has_anomaly`、`comparison_results.anomaly_details`（Task 4.4/4.5）
+- `compliance_matches.status`、`compliance_matches.needs_review`、`compliance_matches.is_acceptable`（Task 4.2/4.3）
+- `requirement_items.is_mandatory`（Task 4.1）
+
+若上游字段缺失或命名不一致，须先协调修改前序 task-spec，不得在本 Task 内硬补字段。
+
 ### services/problem_service.py
 
 ```python

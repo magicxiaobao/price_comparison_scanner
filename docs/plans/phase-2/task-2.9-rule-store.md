@@ -3,11 +3,12 @@
 ## 输入条件
 
 - Task 2.3 完成（规则管理 API 就绪）
+- Task 2.10 完成（openapi.json 已更新，含规则 API 定义）
 - Phase 0 前端骨架就绪（`stores/` 目录已存在）
-- `frontend/src/types/rule.ts` 已创建（Task 2.7）
 
 ## 输出物
 
+- 创建: `frontend/src/types/rule.ts`
 - 创建: `frontend/src/stores/rule-store.ts`
 
 ## 禁止修改
@@ -26,6 +27,7 @@ import type {
   RuleSet,
   ColumnMappingRule,
   ValueNormalizationRule,
+  RuleCreateUpdate,
   TemplateInfo,
   RuleTestResult,
   RuleImportSummary,
@@ -44,8 +46,7 @@ interface RuleStore {
   loadTemplates: () => Promise<void>;
 
   // ---- 规则 CRUD ----
-  addRule: (rule: Partial<ColumnMappingRule | ValueNormalizationRule>) => Promise<void>;
-  updateRule: (rule: Partial<ColumnMappingRule | ValueNormalizationRule>) => Promise<void>;
+  upsertRule: (rule: RuleCreateUpdate) => Promise<void>;
   deleteRule: (ruleId: string) => Promise<void>;
   toggleRule: (ruleId: string) => Promise<void>;
 

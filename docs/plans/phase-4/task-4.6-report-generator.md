@@ -56,6 +56,17 @@ class ReportGenerator:
         Sheet 3: 追溯信息表
         Sheet 4: 需求符合性矩阵（仅当 compliance_matrix 非 None）
 
+        输入数据契约（最小必需字段）：
+        - comparison_results[]: group_id, group_name, comparison_status, supplier_prices[],
+          min_price, effective_min_price, has_anomaly, anomaly_details[]
+        - comparison_results[].supplier_prices[]: supplier_name, unit_price, total_price, tax_basis, unit
+        - standardized_rows[]: id, product_name, spec_model, unit, quantity, unit_price, total_price,
+          supplier_file_id, source_location
+        - traceability_data[]: standardized_row_id, supplier_name, original_filename,
+          source_location (JSON), hit_rule_snapshots (JSON)
+        - compliance_matrix (Optional): supplier_names[], rows[].requirement, rows[].suppliers{}
+        - supplier_names: {supplier_file_id: supplier_name}
+
         注意：首次使用 openpyxl 写入+样式 API，必须用 Context7 查文档。
         """
         import openpyxl
