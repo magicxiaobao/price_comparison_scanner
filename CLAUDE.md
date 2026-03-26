@@ -258,6 +258,13 @@ backend-dev 完成 API 路由后:
 - API 调用：`src/lib/api.ts` 统一封装，自动携带 session token 和端口
 - 组件：自定义组件放 `src/components/` 目录
 
+## 语言约定
+
+- **对话语言**：始终使用中文进行交流和讨论
+- **文档语言**：所有文档（CLAUDE.md、设计文档、注释文档等）使用中文编写
+- **Git 提交信息**：使用中文编写 commit message
+- **代码**：变量名、函数名、类名等标识符使用英文；代码内注释视情况可用中文
+
 ## 代码规范
 
 - Python：类型注解必须，async/await 一致，Pydantic v2 风格
@@ -417,6 +424,47 @@ Leader（Claude Code 主进程）
 
 ---
 
+## 实施计划文档规范
+
+实施计划存放在 `docs/plans/` 目录下，采用三层文档结构：
+
+```
+docs/plans/
+├── <日期>-<功能名>-master-plan.md    ← 总排期 + 全局约束
+├── phase-N/
+│   ├── phase-spec.md                ← Phase 级规格：目标、边界、目录规范、门禁、完成标准
+│   └── task-N.M-<名称>.md           ← 任务级规格：输入、输出、禁止修改、实现规格、验收断言
+└── ...
+```
+
+### 文档优先级
+
+**task-spec > phase-spec > master-plan**。当内容冲突时，以更细粒度的文档为准。
+
+### task-spec 必须包含的章节
+
+| 章节 | 内容 |
+|------|------|
+| 输入条件 | 前置任务完成状态、所需文件/API 就绪状态 |
+| 输出物 | 精确文件路径（创建/修改） |
+| 禁止修改 | 不得修改的文件/目录 |
+| 实现规格 | 接口签名、代码骨架、关键逻辑 |
+| 测试与验收 | fixture、机器可判定的断言、门禁命令 |
+| 提交 | commit message 模板 |
+
+### 执行约束
+
+- Agent 执行任务时**严格限于 task-spec 定义的范围**，不得越权重构
+- 若需修改 task-spec「禁止修改」范围外的文件，须先向 Leader 报告
+- 每个任务提交前须通过工程门禁（后端 `ruff + mypy + pytest`，前端 `eslint + tsc`）
+- 后端 API 变更后须运行 `python scripts/generate_openapi.py` 并提交变更
+
+### 新增实施计划
+
+新增功能的实施计划遵循相同结构：创建 `docs/plans/<日期>-<功能名>-master-plan.md` + 对应的 `phase-N/` 子目录。已完成的计划保留在原处，不归档。
+
+---
+
 ## 关键文档索引
 
 | 文档 | 路径 | 说明 |
@@ -427,4 +475,5 @@ Leader（Claude Code 主进程）
 | 归组算法 | `docs/design/commodity-grouping-algorithm.md` | v1.0 — 相似度公式、阈值、品牌别名表 |
 | 验收数据集 | `docs/design/acceptance-test-datasets.md` | v1.0 — 5 套测试数据及预期结果 |
 | 接口契约 | `docs/api/openapi.json` | 后端自动生成，前端开发依据 |
+| MVP 实施计划 | `docs/plans/2026-03-26-mvp-implementation-master-plan.md` | 6 Phase、54 个任务的总排期 |
 | Leader 提示词 | `docs/prompts/leader-init.md` | 新会话恢复 Leader 角色 |
