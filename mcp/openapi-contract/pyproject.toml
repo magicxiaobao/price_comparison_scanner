@@ -1,0 +1,9 @@
+[project]
+name = "price-comparison-openapi"
+version = "0.1.0"
+description = "MCP server for browsing Price Comparison Scanner backend OpenAPI docs — serves as API contract between frontend and backend"
+requires-python = ">=3.11"
+dependencies = [
+    "fastmcp<3",
+    "watchdog>=6.0.0",
+]

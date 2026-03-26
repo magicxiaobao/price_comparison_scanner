@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "price-comparison-openapi": {
+      "command": "uv",
+      "args": ["run", "--directory", "mcp/openapi-contract", "python", "server.py"],
+      "env": {
+        "OPENAPI_PATH": "docs/api/openapi.json"
+      }
+    }
+  }
+}
