@@ -58,3 +58,10 @@ export interface GroupMergeResponse {
   mergedGroup: CommodityGroup;
   removedGroupIds: string[];
 }
+
+/** 移动成员响应 */
+export interface GroupMoveMemberResponse {
+  sourceGroup: CommodityGroup;
+  targetGroup: CommodityGroup;
+  movedRowId: string;
+}

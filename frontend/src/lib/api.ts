@@ -6,6 +6,7 @@ import type {
   GroupConfirmResponse,
   GroupSplitResponse,
   GroupMergeResponse,
+  GroupMoveMemberResponse,
 } from "../types/grouping";
 import type { SupplierFile, FileUploadResponse, RawTable } from "../types/file";
 import type { TaskInfo } from "../types/task";
@@ -261,8 +262,8 @@ export async function markNotComparable(groupId: string, projectId: string): Pro
   return resp.data;
 }
 
-export async function moveMember(groupId: string, projectId: string, targetGroupId: string, rowId: string): Promise<Record<string, unknown>> {
-  const resp = await client.put<Record<string, unknown>>(`/api/groups/${groupId}/move-member`, { projectId, targetGroupId, rowId });
+export async function moveMember(groupId: string, projectId: string, targetGroupId: string, rowId: string): Promise<GroupMoveMemberResponse> {
+  const resp = await client.put<GroupMoveMemberResponse>(`/api/groups/${groupId}/move-member`, { projectId, targetGroupId, rowId });
   return resp.data;
 }
 

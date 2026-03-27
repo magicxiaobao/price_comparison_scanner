@@ -57,9 +57,10 @@ export function GroupCandidateList({ groups, activeGroupId, onSelectGroup, selec
                   "shrink-0 ml-2 whitespace-nowrap",
                   group.status === "candidate" ? "bg-blue-50 text-blue-700 border-blue-200" :
                   group.status === "confirmed" ? "bg-green-50 text-green-700 border-green-200" :
+                  group.status === "not_comparable" ? "bg-red-50 text-red-700 border-red-200" :
                   "bg-slate-100 text-slate-700 border-slate-200"
                 )}>
-                  {group.status === "candidate" ? "待确认" : group.status === "confirmed" ? "已确认" : group.status}
+                  {group.status === "candidate" ? "待确认" : group.status === "confirmed" ? "已确认" : group.status === "not_comparable" ? "不可比" : group.status}
                 </Badge>
               </div>
               <div className="flex items-center gap-3 text-xs text-slate-500 mb-3">
