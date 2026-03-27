@@ -1,28 +1,28 @@
 import pytest
+
 from engines.commodity_grouper import (
-    normalize_product_name,
-    normalize_spec,
-    normalize_unit,
-    extract_brand,
-    _fullwidth_to_halfwidth,
-    _replace_brand_aliases,
-    _remove_noise_words,
     BRAND_ALIASES,
     KNOWN_BRANDS,
     NOISE_WORDS,
+    WEIGHT_NAME,
+    WEIGHT_SPEC,
+    WEIGHT_UNIT,
+    CommodityGrouper,
+    ForbiddenReason,
+    MatchScore,
+    _fullwidth_to_halfwidth,
     calc_name_similarity,
     calc_spec_overlap,
     calc_unit_match,
     calculate_match_score,
     classify_tokens,
+    extract_brand,
     find_spec_conflict,
-    is_auto_group_forbidden,
     generate_match_reason,
-    CommodityGrouper,
-    MatchScore,
-    ForbiddenReason,
-    WEIGHT_NAME, WEIGHT_SPEC, WEIGHT_UNIT,
-    THRESHOLD_HIGH, THRESHOLD_MEDIUM,
+    is_auto_group_forbidden,
+    normalize_product_name,
+    normalize_spec,
+    normalize_unit,
 )
 
 
@@ -239,7 +239,7 @@ class TestCalculateMatchScore:
         assert score.confidence_level == "high"
 
     def test_weights_sum_to_one(self):
-        assert WEIGHT_NAME + WEIGHT_SPEC + WEIGHT_UNIT == pytest.approx(1.0)
+        assert pytest.approx(1.0) == WEIGHT_NAME + WEIGHT_SPEC + WEIGHT_UNIT
 
     def test_score_range(self):
         score = calculate_match_score("a", "b", {"x"}, {"y"}, "台", "个")
