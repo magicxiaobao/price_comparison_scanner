@@ -99,8 +99,55 @@ class DocumentParser:
     def _parse_docx(
         self, file_path: str, progress_callback: Callable[[float], None] | None = None
     ) -> list[RawTableData]:
-        """Word 解析器占位 — Task 1.3 实现"""
-        raise NotImplementedError("Word 解析器尚未实现")
+        """
+        使用 python-docx 提取 Word 文档中的所有表格。
+        每个 table 生成一个 RawTableData。
+        跳过完全空白的表格。
+        """
+        from docx import Document
+
+        doc = Document(file_path)
+        results: list[RawTableData] = []
+        total_tables = len(doc.tables)
+
+        for idx, table in enumerate(doc.tables):
+            all_rows: list[list[str | None]] = []
+            for row in table.rows:
+                cell_values = [
+                    cell.text.strip() if cell.text.strip() else None
+                    for cell in row.cells
+                ]
+                all_rows.append(cell_values)
+
+            # 跳过完全空白的表格
+            has_data = any(
+                any(v is not None for v in row)
+                for row in all_rows
+            )
+            if not has_data:
+                if progress_callback:
+                    progress_callback((idx + 1) / max(total_tables, 1))
+                continue
+
+            # 第一行作为表头
+            headers = [v or "" for v in all_rows[0]] if all_rows else []
+            data_rows = all_rows[1:] if len(all_rows) > 1 else []
+
+            table_data = RawTableData(
+                table_index=len(results),
+                headers=headers,
+                rows=data_rows,
+                sheet_name=None,
+                page_number=None,
+                row_count=len(data_rows),
+                column_count=len(headers),
+            )
+            results.append(table_data)
+
+            if progress_callback:
+                progress_callback((idx + 1) / max(total_tables, 1))
+
+        return results
 
     def _parse_pdf(
         self, file_path: str, progress_callback: Callable[[float], None] | None = None

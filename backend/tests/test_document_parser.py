@@ -108,3 +108,101 @@ def test_is_ocr_available(parser):
     """OCR 检测不崩溃"""
     result = parser._is_ocr_available()
     assert isinstance(result, bool)
+
+
+# ── Word (docx) 测试 ──
+
+
+@pytest.fixture
+def sample_docx(tmp_path) -> Path:
+    """生成一个包含两个表格的测试 Word 文档"""
+    from docx import Document
+
+    doc = Document()
+    doc.add_paragraph("供应商报价单")
+
+    # 表格 1
+    table1 = doc.add_table(rows=3, cols=3)
+    table1.cell(0, 0).text = "商品名称"
+    table1.cell(0, 1).text = "单价"
+    table1.cell(0, 2).text = "数量"
+    table1.cell(1, 0).text = "打印机"
+    table1.cell(1, 1).text = "2999"
+    table1.cell(1, 2).text = "10"
+    table1.cell(2, 0).text = "墨盒"
+    table1.cell(2, 1).text = "199"
+    table1.cell(2, 2).text = "50"
+
+    doc.add_paragraph("其他信息")
+
+    # 表格 2
+    table2 = doc.add_table(rows=2, cols=2)
+    table2.cell(0, 0).text = "型号"
+    table2.cell(0, 1).text = "备注"
+    table2.cell(1, 0).text = "HP-M1"
+    table2.cell(1, 1).text = "含税"
+
+    path = tmp_path / "test.docx"
+    doc.save(path)
+    return path
+
+
+@pytest.fixture
+def empty_docx(tmp_path) -> Path:
+    """生成一个无表格的 Word 文档"""
+    from docx import Document
+
+    doc = Document()
+    doc.add_paragraph("没有表格的文档")
+    path = tmp_path / "empty.docx"
+    doc.save(path)
+    return path
+
+
+@pytest.fixture
+def blank_table_docx(tmp_path) -> Path:
+    """生成一个只有空白表格的 Word 文档"""
+    from docx import Document
+
+    doc = Document()
+    doc.add_table(rows=3, cols=3)  # 全空
+    path = tmp_path / "blank_table.docx"
+    doc.save(path)
+    return path
+
+
+def test_parse_docx_basic(parser, sample_docx):
+    """解析含表格的 Word → 返回 2 个表格"""
+    results = parser.parse(str(sample_docx))
+    assert len(results) == 2
+
+    t1 = results[0]
+    assert t1.headers == ["商品名称", "单价", "数量"]
+    assert t1.row_count == 2
+    assert t1.column_count == 3
+    assert t1.rows[0] == ["打印机", "2999", "10"]
+    assert t1.sheet_name is None
+
+    t2 = results[1]
+    assert t2.headers == ["型号", "备注"]
+    assert t2.row_count == 1
+
+
+def test_parse_docx_no_tables(parser, empty_docx):
+    """无表格的 Word → 返回空列表"""
+    results = parser.parse(str(empty_docx))
+    assert results == []
+
+
+def test_parse_docx_blank_table(parser, blank_table_docx):
+    """只有空白表格 → 跳过，返回空列表"""
+    results = parser.parse(str(blank_table_docx))
+    assert results == []
+
+
+def test_parse_docx_progress(parser, sample_docx):
+    """进度回调被正确调用"""
+    progress_values: list[float] = []
+    parser.parse(str(sample_docx), progress_callback=lambda p: progress_values.append(p))
+    assert len(progress_values) > 0
+    assert progress_values[-1] <= 1.0
