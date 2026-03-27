@@ -42,6 +42,9 @@ async def list_files(project_id: str):
 @router.put("/files/{file_id}/confirm-supplier", response_model=SupplierFileResponse)
 async def confirm_supplier(file_id: str, body: SupplierConfirmRequest):
     """确认供应商名称"""
+    project = project_service.get_project(body.project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="项目不存在")
     result = file_service.confirm_supplier(file_id, body.supplier_name, body.project_id)
     if not result:
         raise HTTPException(status_code=404, detail="文件不存在")
@@ -60,6 +63,9 @@ async def list_tables(project_id: str):
 @router.put("/tables/{table_id}/toggle-selection", response_model=TableToggleResponse)
 async def toggle_table_selection(table_id: str, body: TableToggleRequest):
     """切换表格参与比价状态"""
+    project = project_service.get_project(body.project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="项目不存在")
     result = file_service.toggle_table_selection(table_id, body.project_id)
     if not result:
         raise HTTPException(status_code=404, detail="表格不存在")

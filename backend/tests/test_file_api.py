@@ -135,6 +135,38 @@ async def test_list_tables_empty(client) -> None:  # type: ignore[no-untyped-def
 
 
 @pytest.mark.anyio
+async def test_confirm_supplier_invalid_project(client, sample_xlsx) -> None:  # type: ignore[no-untyped-def]
+    """确认供应商 - 传入不存在的 project_id -> 404"""
+    resp = await client.post("/api/projects", json={"name": "测试"})
+    project_id = resp.json()["id"]
+
+    with open(sample_xlsx, "rb") as f:
+        upload_resp = await client.post(
+            f"/api/projects/{project_id}/files",
+            files={"file": ("联想_报价单.xlsx", f, "application/octet-stream")},
+        )
+    file_id = upload_resp.json()["file_id"]
+
+    resp = await client.put(
+        f"/api/files/{file_id}/confirm-supplier",
+        json={"supplier_name": "联想集团", "project_id": "nonexistent"},
+    )
+    assert resp.status_code == 404
+    assert resp.json()["detail"] == "项目不存在"
+
+
+@pytest.mark.anyio
+async def test_toggle_table_selection_invalid_project(client) -> None:  # type: ignore[no-untyped-def]
+    """切换表格选中状态 - 传入不存在的 project_id -> 404"""
+    resp = await client.put(
+        "/api/tables/some-table-id/toggle-selection",
+        json={"project_id": "nonexistent"},
+    )
+    assert resp.status_code == 404
+    assert resp.json()["detail"] == "项目不存在"
+
+
+@pytest.mark.anyio
 async def test_guess_supplier_name() -> None:
     """供应商名称猜测规则"""
     from services.file_service import FileService
