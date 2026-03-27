@@ -1,3 +1,5 @@
+import hmac
+
 from fastapi import Request
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -22,7 +24,7 @@ class SessionTokenMiddleware(BaseHTTPMiddleware):
         # 校验 token
         auth = request.headers.get("Authorization", "")
         expected = f"Bearer {config.settings.SESSION_TOKEN}"
-        if not config.settings.SESSION_TOKEN or auth != expected:
+        if not config.settings.SESSION_TOKEN or not hmac.compare_digest(auth, expected):
             return JSONResponse(status_code=403, content={"detail": "Forbidden"})
 
         return await call_next(request)
