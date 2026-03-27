@@ -349,6 +349,11 @@ Leader（Claude Code 主进程）
 6. **契约遵守**：frontend-dev 实现 API 调用前必须先读取 openapi.json，不可凭假设编码
 7. **设计文档优先**：所有实现必须对照设计文档（PRD + 技术架构 + 归组算法），偏离时先和 Leader 确认
 8. **MCP 优先查文档**：使用不熟悉的库 API 时，必须先通过 Context7 / DeepWiki 查询，不凭记忆猜测
+9. **目录隔离（强制）**：Agent 只能操作自己职责范围内的目录，`git add` 时必须指定具体文件路径，**禁止使用 `git add .` 或 `git add -A`**
+   - `backend-dev`：只能创建/修改 `backend/` 和 `docs/api/openapi.json`（仅通过生成脚本），**禁止操作 `frontend/` 目录**
+   - `frontend-dev`：只能创建/修改 `frontend/`，**禁止操作 `backend/` 目录**
+   - `reviewer`：只读审查，不修改任何源文件（除非被指派为修复任务的执行者）
+   - 违反目录隔离时，git commit 会将其他 Agent 的工作混入错误的提交，导致任务边界失效和审计困难
 
 ### Agent Skill 分配与强制约束
 
