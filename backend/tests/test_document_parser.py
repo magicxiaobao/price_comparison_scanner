@@ -11,7 +11,7 @@ def parser():
 
 
 @pytest.fixture
-def sample_xlsx(tmp_path) -> Path:
+def sample_xlsx(tmp_path: Path) -> Path:
     """生成一个包含两个 sheet 的测试 Excel"""
     import openpyxl
 
@@ -35,7 +35,7 @@ def sample_xlsx(tmp_path) -> Path:
 
 
 @pytest.fixture
-def empty_xlsx(tmp_path) -> Path:
+def empty_xlsx(tmp_path: Path) -> Path:
     """生成一个完全空白的 Excel"""
     import openpyxl
 
@@ -114,7 +114,7 @@ def test_is_ocr_available(parser):
 
 
 @pytest.fixture
-def sample_docx(tmp_path) -> Path:
+def sample_docx(tmp_path: Path) -> Path:
     """生成一个包含两个表格的测试 Word 文档"""
     from docx import Document
 
@@ -143,31 +143,31 @@ def sample_docx(tmp_path) -> Path:
     table2.cell(1, 1).text = "含税"
 
     path = tmp_path / "test.docx"
-    doc.save(path)
+    doc.save(str(path))
     return path
 
 
 @pytest.fixture
-def empty_docx(tmp_path) -> Path:
+def empty_docx(tmp_path: Path) -> Path:
     """生成一个无表格的 Word 文档"""
     from docx import Document
 
     doc = Document()
     doc.add_paragraph("没有表格的文档")
     path = tmp_path / "empty.docx"
-    doc.save(path)
+    doc.save(str(path))
     return path
 
 
 @pytest.fixture
-def blank_table_docx(tmp_path) -> Path:
+def blank_table_docx(tmp_path: Path) -> Path:
     """生成一个只有空白表格的 Word 文档"""
     from docx import Document
 
     doc = Document()
     doc.add_table(rows=3, cols=3)  # 全空
     path = tmp_path / "blank_table.docx"
-    doc.save(path)
+    doc.save(str(path))
     return path
 
 
@@ -212,7 +212,7 @@ def test_parse_docx_progress(parser, sample_docx):
 
 
 @pytest.fixture
-def sample_pdf(tmp_path) -> Path:
+def sample_pdf(tmp_path: Path) -> Path:
     """生成一个包含表格的简单 PDF"""
     from fpdf import FPDF
 
@@ -244,7 +244,7 @@ def sample_pdf(tmp_path) -> Path:
 
 
 @pytest.fixture
-def empty_pdf(tmp_path) -> Path:
+def empty_pdf(tmp_path: Path) -> Path:
     """生成一个无表格的 PDF（纯文本）"""
     from fpdf import FPDF
 
