@@ -87,14 +87,14 @@ frontend/src/
 | Task | 名称 | 负责人 | 依赖 |
 |------|------|--------|------|
 | 1.1 | TaskManager 异步任务框架 + 任务状态 API | backend-dev | Phase 0 |
-| 1.2 | DocumentParser — Excel 解析器 | backend-dev | Phase 0 |
-| 1.3 | DocumentParser — Word 解析器 | backend-dev | Phase 0 |
-| 1.4 | DocumentParser — PDF 结构化解析器（L1 only） | backend-dev | Phase 0 |
+| 1.2 | DocumentParser — Excel 解析器（含分发骨架） | backend-dev | Phase 0 |
+| 1.3 | DocumentParser — Word 解析器 | backend-dev | **1.2**（需要 1.2 创建的 document_parser.py 骨架） |
+| 1.4 | DocumentParser — PDF 结构化解析器（L1 only） | backend-dev | **1.2**（需要 1.2 创建的 document_parser.py 骨架） |
 | 1.5 | 文件导入 API + 供应商确认 API + 表格选择 API | backend-dev | 1.1, 1.2, 1.3, 1.4, 1.6 |
 | 1.6 | 文件导入相关 Pydantic 模型 | backend-dev | Phase 0 |
 | 1.7 | 前端 ImportStage — 文件上传 + 解析进度 | frontend-dev | 1.5, 1.10 |
-| 1.8 | 前端 ImportStage — 供应商确认 + 表格选择 | frontend-dev | 1.5, 1.10 |
-| 1.9 | 前端 ProjectStore 扩展（阶段状态） | frontend-dev | 1.7 |
+| 1.8 | 前端 ImportStage — 供应商确认 + 表格选择 | frontend-dev | **1.7**（需修改 1.7 创建的 import-stage.tsx），1.10 |
+| 1.9 | 前端 ProjectStore 扩展（阶段状态） | frontend-dev | 1.8 |
 | 1.10 | 更新 openapi.json + reviewer 审查 | backend-dev | 1.5 |
 
 ### 依赖关系图
@@ -104,31 +104,51 @@ Phase 0 完成
     │
     ├── 1.1 TaskManager ──────────────────────┐
     │                                          │
-    ├── 1.2 Excel 解析器 ─────────────────────┤
-    │                                          │
-    ├── 1.3 Word 解析器 ──────────────────────┤
-    │                                          │
-    ├── 1.4 PDF 解析器 ───────────────────────┤
+    ├── 1.2 Excel 解析器 ──┬── 1.3 Word ─────┤
+    │                       │                  │
+    │                       └── 1.4 PDF ──────┤
     │                                          │
     └── 1.6 Pydantic 模型 ────────────────────┤
                                                │
                                           1.5 文件导入 API ── 1.10 openapi 更新
-                                               │                    │
-                                               │              ┌─────┤
-                                               │              │     │
-                                          1.7 文件上传UI ─────┘     │
-                                               │                    │
-                                          1.8 供应商确认UI ─────────┘
-                                               │
-                                          1.9 ProjectStore 扩展
+                                                                    │
+                                                               1.7 文件上传UI
+                                                                    │
+                                                               1.8 供应商确认UI
+                                                                    │
+                                                               1.9 ProjectStore 扩展
 ```
 
-### 并行化机会
+### 并行化机会与约束
 
-- **1.1 / 1.2 / 1.3 / 1.4 / 1.6** 全部可并行（都仅依赖 Phase 0）
-- **1.2 / 1.3 / 1.4** 三个解析器完全独立，可同时开发
-- **1.7 / 1.8** 都依赖 1.5 和 1.10，可在 API 就绪后并行开发
-- **1.9** 依赖 1.7
+**可并行：**
+- **1.1 / 1.2 / 1.6** 三者互不依赖，都仅依赖 Phase 0，可完全并行
+- **1.3 / 1.4** 互不依赖，但都依赖 1.2（需要 document_parser.py 骨架），1.2 完成后可并行
+
+**不可并行（文件级冲突）：**
+- **1.2 → 1.3**：1.3 修改 1.2 创建的 `engines/document_parser.py`
+- **1.2 → 1.4**：1.4 修改 1.2 创建的 `engines/document_parser.py`
+- **1.7 → 1.8**：1.8 修改 1.7 创建的 `components/stages/import-stage.tsx`
+- **1.8 → 1.9**：1.9 修改 1.8 集成后的 `project-workbench.tsx`
+
+**执行波次建议：**
+1. Wave 1（并行）：1.1 + 1.2 + 1.6
+2. Wave 2（并行）：1.3 + 1.4（等待 1.2 完成）
+3. Wave 3：1.5（等待 1.1 + 1.3 + 1.4 + 1.6 完成）
+4. Wave 4：1.10（openapi 更新 + reviewer 审查）
+5. Wave 5：1.7（前端文件上传）
+6. Wave 6：1.8（前端供应商确认 + 表格选择）
+7. Wave 7：1.9（ProjectStore 扩展）
+
+### 目录隔离约束
+
+参照 CLAUDE.md 第 9 条「目录隔离」规则，Phase 1 所有任务必须遵守：
+
+- **backend-dev**：只能操作 `backend/` 目录和 `docs/api/openapi.json`（仅 Task 1.10 通过生成脚本）
+- **frontend-dev**：只能操作 `frontend/` 目录
+- **reviewer**：只读审查，不修改源文件
+- `git add` **必须指定具体文件路径**，**禁止使用 `git add .`、`git add -A` 或目录级兜底**
+- 每个任务的提交命令（commit 章节）已列出需要 add 的文件清单，Agent 必须严格按清单执行
 
 ---
 

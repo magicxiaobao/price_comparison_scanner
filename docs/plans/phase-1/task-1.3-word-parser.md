@@ -3,7 +3,7 @@
 ## 输入条件
 
 - Phase 0 全部完成
-- `backend/engines/document_parser.py` 已存在（Task 1.2 创建的骨架）
+- **Task 1.2 完成**：`backend/engines/document_parser.py` 已存在（含 `parse()` 分发骨架 + `_parse_xlsx` 实现 + `_parse_docx` 占位）
 
 ## 输出物
 

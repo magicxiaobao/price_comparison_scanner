@@ -8,6 +8,12 @@
 - Task 1.4 完成（PDF 解析器就绪）
 - Task 1.6 完成（Pydantic 模型就绪）
 
+### 既有接口契约（Phase 0 已实现，本 Task 直接使用）
+
+- **`api/deps.py:get_app_data_dir() -> Path`**：返回 `Path(config.settings.APP_DATA_DIR)`，是全局数据目录。`FileService` 应从 `api.deps` import 此函数（与 `ProjectService` 的引用方式一致）。
+- **`services/project_service.py:ProjectService.get_project(project_id: str) -> ProjectDetail | None`**：查询项目详情，项目不存在时返回 None。`api/files.py` 路由中用于校验项目存在性。
+- **`api/deps.py:get_project_db(project_id: str) -> Database`**：获取项目级 SQLite 数据库实例。可在 service 层或 repo 层按需使用。
+
 ## 输出物
 
 - 创建: `backend/db/file_repo.py`

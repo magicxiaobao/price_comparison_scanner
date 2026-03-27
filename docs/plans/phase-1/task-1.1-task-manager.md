@@ -43,7 +43,10 @@ class TaskStatus(str, Enum):
 
 
 class TaskInfo:
-    """内部任务状态记录"""
+    """
+    内部任务状态记录。
+    实现允许使用 @dataclass 替代裸类型注解，只要字段名和类型一致即可。
+    """
     task_id: str
     task_type: str
     status: TaskStatus
