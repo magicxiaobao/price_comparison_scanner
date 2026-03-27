@@ -10,9 +10,11 @@
 
 ### 既有接口契约（Phase 0 已实现，本 Task 直接使用）
 
-- **`api/deps.py:get_app_data_dir() -> Path`**：返回 `Path(config.settings.APP_DATA_DIR)`，是全局数据目录。`FileService` 应从 `api.deps` import 此函数（与 `ProjectService` 的引用方式一致）。
-- **`services/project_service.py:ProjectService.get_project(project_id: str) -> ProjectDetail | None`**：查询项目详情，项目不存在时返回 None。`api/files.py` 路由中用于校验项目存在性。
-- **`api/deps.py:get_project_db(project_id: str) -> Database`**：获取项目级 SQLite 数据库实例。可在 service 层或 repo 层按需使用。
+- **`config.py:get_app_data_dir() -> Path`**：返回 `Path(settings.APP_DATA_DIR)`，全局数据目录。定义在 `config.py`（基础设施层），所有层均可安全 import。`FileService` 使用 `from config import get_app_data_dir`。
+- **`services/project_service.py:ProjectService.get_project(project_id: str) -> ProjectDetail | None`**：查询项目详情，不存在返回 None。`api/files.py` 路由中用于校验项目存在性。
+- **`api/deps.py:get_project_db(project_id: str) -> Database`**：获取项目级 SQLite 数据库实例。仅供 `api/` 路由层使用（依赖注入）。`services/` 和 `db/` 层应直接构造 `Database(path)` 而非反向依赖 `api/deps.py`。
+
+**分层约束：** `config.py` 是基础设施，任何层可依赖。`api/deps.py` 是 API 层的依赖注入模块，仅供路由层使用，`services/` 和 `db/` 层禁止 import `api/` 下的任何模块。
 
 ## 输出物
 
@@ -182,8 +184,8 @@ from db.database import Database
 from db.file_repo import FileRepo
 from db.table_repo import TableRepo
 from engines.document_parser import DocumentParser
-from engines.task_manager import get_task_manager
 from config import get_app_data_dir
+from engines.task_manager import get_task_manager
 
 
 class FileService:

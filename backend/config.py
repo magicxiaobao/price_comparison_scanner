@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 
 
 class Settings:
@@ -11,3 +12,15 @@ class Settings:
 
 
 settings = Settings()
+
+
+def get_app_data_dir() -> Path:
+    """获取应用数据目录，不存在则创建"""
+    path = Path(settings.APP_DATA_DIR)
+    path.mkdir(parents=True, exist_ok=True)
+    return path
+
+
+def get_global_config_path() -> Path:
+    """获取全局配置文件路径"""
+    return get_app_data_dir() / "config.json"

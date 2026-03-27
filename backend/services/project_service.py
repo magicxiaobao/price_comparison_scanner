@@ -4,7 +4,7 @@ import shutil
 import uuid
 from pathlib import Path
 
-from api.deps import get_app_data_dir
+from config import get_app_data_dir
 from db.database import Database
 from db.project_repo import ProjectRepo
 from models.project import ProjectCreate, ProjectDetail, ProjectSummary, StageStatuses
