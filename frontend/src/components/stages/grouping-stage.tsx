@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import { DndContext, DragOverlay, DragStartEvent, DragEndEvent, pointerWithin } from '@dnd-kit/core';
 import { useProjectStore } from "../../stores/project-store";
-import { moveMember } from "../../lib/api";
+import { moveMember, confirmGroup, splitGroup, mergeGroups, markNotComparable } from "../../lib/api";
+import { GroupSplitDialog } from "./group-split-dialog";
 import { DraggableMemberRow } from "./group-drag-zone";
-import type { GroupMemberSummary } from "../../types/grouping";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "../ui/dialog";
+import type { CommodityGroup, GroupMemberSummary } from "../../types/grouping";
 import { useGroupingStore } from "../../stores/grouping-store";
 import { GroupCandidateList } from "./group-candidate-list";
 import { Button } from "../ui/button";
@@ -20,6 +22,54 @@ export function GroupingStage({ projectId }: GroupingStageProps) {
   const [activeDragItem, setActiveDragItem] = useState<{ member: GroupMemberSummary, sourceGroupId: string } | null>(null);
   const [isMoving, setIsMoving] = useState(false);
   const [dragError, setDragError] = useState<string | null>(null);
+  const [selectedGroupIds, setSelectedGroupIds] = useState<string[]>([]);
+  const [splitDialogGroup, setSplitDialogGroup] = useState<CommodityGroup | null>(null);
+  const [mergeConfirmOpen, setMergeConfirmOpen] = useState(false);
+  const [notComparableConfirmGroup, setNotComparableConfirmGroup] = useState<string | null>(null);
+
+  const handleToggleGroupSelect = (groupId: string) => {
+    setSelectedGroupIds(prev =>
+      prev.includes(groupId) ? prev.filter(id => id !== groupId) : [...prev, groupId]
+    );
+  };
+
+  const handleAction = async (actionFn: () => Promise<unknown>) => {
+    try {
+      setIsMoving(true);
+      setDragError(null);
+      await actionFn();
+      await loadGroups(projectId);
+      await useProjectStore.getState().loadProject(projectId);
+      setSelectedGroupIds([]);
+    } catch (err) {
+      console.error("Action failed:", err);
+      setDragError(err instanceof Error ? err.message : "操作失败，请重试");
+    } finally {
+      setIsMoving(false);
+    }
+  };
+
+  const handleConfirmGroup = (groupId: string) => handleAction(() => confirmGroup(groupId, projectId));
+  
+  const handleMarkNotComparable = (groupId: string) => {
+    setNotComparableConfirmGroup(groupId);
+  };
+  const doMarkNotComparable = (groupId: string) => handleAction(() => markNotComparable(groupId, projectId));
+
+  const handleMergeSelected = () => {
+    if (selectedGroupIds.length < 2) return;
+    setMergeConfirmOpen(true);
+  };
+  const doMergeSelected = () => {
+    if (selectedGroupIds.length < 2) return;
+    handleAction(() => mergeGroups(projectId, selectedGroupIds));
+  };
+
+  const handleSplitSubmit = async (newGroups: string[][]) => {
+    if (!splitDialogGroup) return;
+    await handleAction(() => splitGroup(splitDialogGroup.id, projectId, newGroups));
+    setSplitDialogGroup(null);
+  };
 
   const handleDragStart = (event: DragStartEvent) => {
     setDragError(null);
@@ -123,13 +173,23 @@ export function GroupingStage({ projectId }: GroupingStageProps) {
             候选归组列表
             <span className="text-xs font-medium text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full">{groups.length} 组</span>
           </h3>
-          <Button variant="outline" size="sm" className="h-7 text-xs bg-white" onClick={() => generateGrouping(projectId)} disabled={isGenerating}>重置</Button>
+          <div className="flex items-center gap-2">
+            {selectedGroupIds.length >= 2 && (
+              <Button variant="default" size="sm" className="h-7 text-xs bg-blue-600 hover:bg-blue-700" onClick={handleMergeSelected} disabled={isMoving || isGenerating}>合并选中 ({selectedGroupIds.length})</Button>
+            )}
+            <Button variant="outline" size="sm" className="h-7 text-xs bg-white" onClick={() => generateGrouping(projectId)} disabled={isGenerating || isMoving}>重置</Button>
+          </div>
         </div>
         <ScrollArea className="flex-1 p-4">
           <GroupCandidateList 
             groups={groups} 
             activeGroupId={selectedGroupId} 
             onSelectGroup={selectGroup} 
+            selectedGroupIds={selectedGroupIds}
+            onToggleGroupSelect={handleToggleGroupSelect}
+            onConfirmGroup={handleConfirmGroup}
+            onSplitGroup={setSplitDialogGroup}
+            onMarkNotComparable={handleMarkNotComparable}
           />
         </ScrollArea>
       </div>
@@ -219,6 +279,47 @@ export function GroupingStage({ projectId }: GroupingStageProps) {
         </div>
       ) : null}
     </DragOverlay>
+    <GroupSplitDialog 
+      group={splitDialogGroup} 
+      open={!!splitDialogGroup} 
+      onClose={() => setSplitDialogGroup(null)} 
+      onConfirm={handleSplitSubmit} 
+    />
+    <Dialog open={mergeConfirmOpen} onOpenChange={setMergeConfirmOpen}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>合并候选归组</DialogTitle>
+          <DialogDescription>
+            将选中 {selectedGroupIds.length} 个候选组进行合并。合并后的新组将包含原有的所有明细成员。该操作无法直接撤销。您确定要合并吗？
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setMergeConfirmOpen(false)} disabled={isMoving}>取消</Button>
+          <Button onClick={() => {
+            setMergeConfirmOpen(false);
+            doMergeSelected();
+          }} disabled={isMoving}>确定合并</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+    <Dialog open={!!notComparableConfirmGroup} onOpenChange={(val) => !val && setNotComparableConfirmGroup(null)}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>标记为不可比</DialogTitle>
+          <DialogDescription>
+            确定要将该商品归组标记为不可比吗？标记后，此归组将不再参与后续的比价计算流程，且需要手动恢复。
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setNotComparableConfirmGroup(null)} disabled={isMoving}>取消</Button>
+          <Button variant="destructive" onClick={() => {
+            const groupId = notComparableConfirmGroup;
+            setNotComparableConfirmGroup(null);
+            if (groupId) doMarkNotComparable(groupId);
+          }} disabled={isMoving}>确定标记</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
     </DndContext>
   );
 }

@@ -1,4 +1,5 @@
 import { Badge } from "../ui/badge";
+import { Button } from "../ui/button";
 import type { CommodityGroup } from "../../types/grouping";
 import { cn } from "../../lib/utils";
 import { DroppableGroupCard } from "./group-drag-zone";
@@ -7,9 +8,14 @@ interface GroupCandidateListProps {
   groups: CommodityGroup[];
   activeGroupId: string | null;
   onSelectGroup: (groupId: string) => void;
+  selectedGroupIds: string[];
+  onToggleGroupSelect: (groupId: string) => void;
+  onConfirmGroup: (groupId: string) => void;
+  onSplitGroup: (group: CommodityGroup) => void;
+  onMarkNotComparable: (groupId: string) => void;
 }
 
-export function GroupCandidateList({ groups, activeGroupId, onSelectGroup }: GroupCandidateListProps) {
+export function GroupCandidateList({ groups, activeGroupId, onSelectGroup, selectedGroupIds, onToggleGroupSelect, onConfirmGroup, onSplitGroup, onMarkNotComparable }: GroupCandidateListProps) {
   const highGroups = groups.filter(g => g.confidenceLevel === "high");
   const mediumGroups = groups.filter(g => g.confidenceLevel === "medium");
   const lowGroups = groups.filter(g => g.confidenceLevel === "low");
@@ -33,8 +39,19 @@ export function GroupCandidateList({ groups, activeGroupId, onSelectGroup }: Gro
               onClick={() => onSelectGroup(group.id)}
             >
               <div className="flex justify-between items-start mb-2">
-                <div className="font-medium text-slate-900 line-clamp-1" title={group.groupName}>
-                  {group.groupName || "未命名归组"}
+                <div className="flex items-center gap-2 flex-1 min-w-0">
+                  <input 
+                    type="checkbox" 
+                    className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer flex-shrink-0"
+                    checked={selectedGroupIds.includes(group.id)}
+                    onChange={(e) => {
+                      e.stopPropagation();
+                      onToggleGroupSelect(group.id);
+                    }}
+                  />
+                  <div className="font-medium text-slate-900 line-clamp-1 flex-1" title={group.groupName}>
+                    {group.groupName || "未命名归组"}
+                  </div>
                 </div>
                 <Badge variant="outline" className={cn(
                   "shrink-0 ml-2 whitespace-nowrap",
@@ -56,6 +73,25 @@ export function GroupCandidateList({ groups, activeGroupId, onSelectGroup }: Gro
               <p className="text-xs text-slate-400 line-clamp-1 mb-1" title={group.matchReason}>
                 {group.matchReason}
               </p>
+              <div className="flex justify-end gap-2 pt-2 border-t border-slate-100 flex-wrap mt-2">
+                {group.status === "candidate" && (
+                  <>
+                    <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-blue-600 hover:text-blue-700 hover:bg-blue-100" onClick={(e) => { e.stopPropagation(); onConfirmGroup(group.id); }}>
+                      确认
+                    </Button>
+                    {group.members.length >= 2 && (
+                      <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-orange-600 hover:text-orange-700 hover:bg-orange-100" onClick={(e) => { e.stopPropagation(); onSplitGroup(group); }}>
+                        拆分
+                      </Button>
+                    )}
+                  </>
+                )}
+                {group.status !== "not_comparable" && (
+                  <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-slate-500 hover:text-slate-700 hover:bg-slate-100" onClick={(e) => { e.stopPropagation(); onMarkNotComparable(group.id); }}>
+                    标记不可比
+                  </Button>
+                )}
+              </div>
             </DroppableGroupCard>
           ))}
         </div>
