@@ -99,7 +99,7 @@ class GroupRepo:
         with self.db.read() as conn:
             cursor = conn.execute(
                 """SELECT gm.standardized_row_id,
-                          sr.product_name, sr.spec, sr.unit,
+                          sr.product_name, sr.spec_model, sr.unit,
                           sr.unit_price, sr.quantity, sr.confidence,
                           sf.supplier_name
                    FROM group_members gm
@@ -192,7 +192,7 @@ class GroupingService:
         self.repo = GroupRepo(db)
         self.engine = CommodityGrouper()
 
-    def generate_candidates(self, project_id: str) -> list[CommodityGroupResponse]:
+    def generate_candidates(self, progress_callback: object, project_id: str) -> list[CommodityGroupResponse]:
         """
         生成候选归组。
 
@@ -205,6 +205,7 @@ class GroupingService:
         """
         # 清除旧归组
         self.repo.delete_groups_by_project(project_id)
+        progress_callback(0.1)
 
         # 查询标准化行
         rows = self._get_standardized_rows(project_id)
@@ -213,6 +214,7 @@ class GroupingService:
 
         # 生成候选
         candidates = self.engine.generate_candidates(rows)
+        progress_callback(0.5)
 
         # 持久化
         result: list[CommodityGroupResponse] = []
@@ -230,6 +232,8 @@ class GroupingService:
             )
             self.repo.add_members(group_id, candidate.member_row_ids)
             result.append(self._to_response(group_id, project_id))
+
+        progress_callback(1.0)
 
         # 更新阶段状态
         self._update_stage_status(project_id, "grouping_status", "completed")
@@ -420,7 +424,7 @@ class GroupingService:
                 standardized_row_id=m["standardized_row_id"],
                 supplier_name=m.get("supplier_name", ""),
                 product_name=m.get("product_name", ""),
-                spec=m.get("spec", ""),
+                spec_model=m.get("spec_model", ""),
                 unit=m.get("unit", ""),
                 unit_price=m.get("unit_price"),
                 quantity=m.get("quantity"),
@@ -443,8 +447,15 @@ class GroupingService:
             member_count=len(members),
         )
 
+    _VALID_STAGES = frozenset({
+        "import_status", "normalize_status", "grouping_status",
+        "compliance_status", "comparison_status",
+    })
+
     def _update_stage_status(self, project_id: str, stage: str, status: str) -> None:
         """更新项目阶段状态"""
+        if stage not in self._VALID_STAGES:
+            raise ValueError(f"Invalid stage: {stage}")
         with self.db.transaction() as conn:
             conn.execute(
                 f"UPDATE projects SET {stage} = ?, updated_at = ? WHERE id = ?",
@@ -503,11 +514,13 @@ async def generate_grouping(project_id: str):
     """生成归组候选（异步任务）"""
     # MVP 简化：同步执行，后续可改为 TaskManager 异步
     # 如需异步，通过 TaskManager.submit() 提交
-    from services.task_manager import task_manager
-    task_id = task_manager.submit(
-        task_type="grouping",
-        params={"project_id": project_id},
-        callback=lambda: _get_grouping_service(project_id).generate_candidates(project_id),
+    from engines.task_manager import get_task_manager
+    service = _get_grouping_service(project_id)
+    tm = get_task_manager()
+    task_id = tm.submit(
+        "grouping",
+        service.generate_candidates,
+        project_id,
     )
     return GroupingGenerateResponse(task_id=task_id)
 
@@ -588,6 +601,59 @@ app.include_router(grouping_router, prefix="/api")
 ```
 
 ## 测试与验收
+
+### 测试 Fixture（补充到 conftest.py 或本文件 conftest）
+
+本 Task 的测试需要以下 fixture，如果 `conftest.py` 中不存在则需创建：
+
+```python
+import uuid
+import pytest
+from db.database import Database
+
+@pytest.fixture
+def project_db(tmp_path) -> Database:
+    """创建临时项目数据库，初始化完整 schema"""
+    db = Database(tmp_path / "test_project.db")
+    schema_path = Path(__file__).parent.parent / "db" / "schema.sql"
+    with db.transaction() as conn:
+        conn.executescript(schema_path.read_text())
+    # 插入测试项目
+    with db.transaction() as conn:
+        conn.execute(
+            "INSERT INTO projects (id, name, created_at, updated_at) VALUES (?, ?, ?, ?)",
+            ("p1", "test-project", "2026-01-01T00:00:00Z", "2026-01-01T00:00:00Z"),
+        )
+    return db
+
+
+@pytest.fixture
+def sample_standardized_rows(project_db) -> list[dict]:
+    """插入 3 条测试用标准化行，返回行记录列表"""
+    rows = []
+    with project_db.transaction() as conn:
+        # 先插入 supplier_file 和 raw_table
+        conn.execute(
+            "INSERT INTO supplier_files (id, project_id, original_name, stored_path, file_type, supplier_name, status) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            ("sf1", "p1", "test.xlsx", "/tmp/test.xlsx", "xlsx", "供应商A", "parsed"),
+        )
+        conn.execute(
+            "INSERT INTO raw_tables (id, supplier_file_id, sheet_name, row_count, column_count, is_selected) VALUES (?, ?, ?, ?, ?, ?)",
+            ("rt1", "sf1", "Sheet1", 3, 5, 1),
+        )
+        for i in range(3):
+            row_id = f"sr{i+1}"
+            conn.execute(
+                """INSERT INTO standardized_rows
+                   (id, raw_table_id, supplier_file_id, row_index, product_name, spec_model, unit, quantity, unit_price, source_location)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                (row_id, "rt1", "sf1", i, f"商品{i+1}", f"规格{i+1}", "台", 10.0, 100.0, "{}"),
+            )
+            rows.append({"id": row_id, "product_name": f"商品{i+1}", "spec_model": f"规格{i+1}", "unit": "台"})
+    return rows
+```
+
+**注意**：`test_grouping_api.py` 中引用的 `client_with_standardized_data`、`client_with_groups`、`first_group_id`、`group_with_2_members`、`two_group_ids`、`another_group_id` 等 fixture 需要在实现时根据上述基础 fixture 搭建。task-spec 中的 API 测试为示意结构，具体 fixture 实现由 backend-dev 在编码时补全。
 
 ### tests/test_group_repo.py
 

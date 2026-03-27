@@ -30,13 +30,13 @@ python scripts/generate_openapi.py
 
 | 方法 | 路径 | 说明 |
 |------|------|------|
-| POST | `/api/projects/{id}/grouping/generate` | 生成归组候选 |
-| GET | `/api/projects/{id}/groups` | 获取归组列表 |
-| PUT | `/api/groups/{id}/confirm` | 确认归组 |
-| PUT | `/api/groups/{id}/split` | 拆分归组 |
-| POST | `/api/projects/{id}/grouping/merge` | 手工合并归组 |
-| PUT | `/api/groups/{id}/not-comparable` | 标记不可比 |
-| PUT | `/api/groups/{id}/move-member` | 成员跨组移动 |
+| POST | `/api/projects/{project_id}/grouping/generate` | 生成归组候选 |
+| GET | `/api/projects/{project_id}/groups` | 获取归组列表 |
+| PUT | `/api/groups/{group_id}/confirm` | 确认归组 |
+| PUT | `/api/groups/{group_id}/split` | 拆分归组 |
+| POST | `/api/projects/{project_id}/grouping/merge` | 手工合并归组 |
+| PUT | `/api/groups/{group_id}/not-comparable` | 标记不可比 |
+| PUT | `/api/groups/{group_id}/move-member` | 成员跨组移动 |
 
 ### 验证 Schema 定义
 
@@ -99,19 +99,7 @@ required_paths = [
 ]
 
 for rp in required_paths:
-    # FastAPI 可能用 {project_id} 或 {id}，检查路径包含关键段
-    key_parts = rp.split('/')
-    matched = any(
-        all(part in p or (part.startswith('{') and any(pp.startswith('{') for pp in p.split('/')))
-            for part, pp in zip(key_parts, p.split('/')) if part)
-        for p in paths
-    )
-    # 简化检查：确保关键路径段存在
-    found = False
-    for p in paths:
-        if 'grouping/generate' in p or 'groups' in p or 'not-comparable' in p:
-            found = True
-    assert found or any('group' in p.lower() for p in paths), f'Missing path pattern: {rp}'
+    assert rp in paths, f'Missing path: {rp} (actual paths: {[p for p in paths if \"group\" in p.lower()]})'
 
 # 验证 Schema
 required_schemas = [

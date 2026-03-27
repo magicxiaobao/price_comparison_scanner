@@ -29,12 +29,12 @@
 ```typescript
 /** 归组成员摘要 */
 export interface GroupMemberSummary {
-  standardized_row_id: string;
-  supplier_name: string;
-  product_name: string;
-  spec: string;
+  standardizedRowId: string;
+  supplierName: string;
+  productName: string;
+  specModel: string;  // 规格型号（后端 spec_model → JSON specModel）
   unit: string;
-  unit_price: number | null;
+  unitPrice: number | null;
   quantity: number | null;
   confidence: number;
 }
@@ -42,85 +42,90 @@ export interface GroupMemberSummary {
 /** 归组响应 */
 export interface CommodityGroup {
   id: string;
-  project_id: string;
-  group_name: string;
-  normalized_key: string;
-  confidence_level: "high" | "medium" | "low";
-  match_score: number;
-  match_reason: string;
+  projectId: string;
+  groupName: string;
+  normalizedKey: string;
+  confidenceLevel: "high" | "medium" | "low";
+  matchScore: number;
+  matchReason: string;
   status: "candidate" | "confirmed" | "split" | "not_comparable";
-  confirmed_at: string | null;
+  confirmedAt: string | null;
   members: GroupMemberSummary[];
-  member_count: number;
+  memberCount: number;
 }
 
 /** 生成归组响应 */
 export interface GroupingGenerateResponse {
-  task_id: string;
+  taskId: string;
 }
 
 /** 确认归组响应 */
 export interface GroupConfirmResponse {
   id: string;
   status: string;
-  confirmed_at: string;
+  confirmedAt: string;
 }
 
 /** 拆分请求 */
 export interface GroupSplitRequest {
-  new_groups: string[][];
+  newGroups: string[][];
 }
 
 /** 拆分响应 */
 export interface GroupSplitResponse {
-  original_group_id: string;
-  new_groups: CommodityGroup[];
+  originalGroupId: string;
+  newGroups: CommodityGroup[];
 }
 
 /** 合并请求 */
 export interface GroupMergeRequest {
-  group_ids: string[];
+  groupIds: string[];
 }
 
 /** 合并响应 */
 export interface GroupMergeResponse {
-  merged_group: CommodityGroup;
-  removed_group_ids: string[];
+  mergedGroup: CommodityGroup;
+  removedGroupIds: string[];
 }
 ```
 
-### lib/api.ts（追加方法）
+### lib/api.ts（追加函数）
 
 ```typescript
-// ---- 归组 API ----
+// ---- 归组 API（追加到 api.ts） ----
 
-async generateGrouping(projectId: string): Promise<GroupingGenerateResponse> {
-  const resp = await this.client.post(`/api/projects/${projectId}/grouping/generate`);
+export async function generateGrouping(projectId: string): Promise<GroupingGenerateResponse> {
+  const resp = await client.post<GroupingGenerateResponse>(`/api/projects/${projectId}/grouping/generate`);
   return resp.data;
 }
 
-async listGroups(projectId: string): Promise<CommodityGroup[]> {
-  const resp = await this.client.get(`/api/projects/${projectId}/groups`);
+export async function listGroups(projectId: string): Promise<CommodityGroup[]> {
+  const resp = await client.get<CommodityGroup[]>(`/api/projects/${projectId}/groups`);
   return resp.data;
 }
 
-async confirmGroup(groupId: string): Promise<GroupConfirmResponse> {
-  const resp = await this.client.put(`/api/groups/${groupId}/confirm`);
+export async function confirmGroup(groupId: string, projectId: string): Promise<GroupConfirmResponse> {
+  const resp = await client.put<GroupConfirmResponse>(`/api/groups/${groupId}/confirm`, { projectId });
   return resp.data;
 }
 
-async splitGroup(groupId: string, newGroups: string[][]): Promise<GroupSplitResponse> {
-  const resp = await this.client.put(`/api/groups/${groupId}/split`, { new_groups: newGroups });
+export async function splitGroup(groupId: string, projectId: string, newGroups: string[][]): Promise<GroupSplitResponse> {
+  const resp = await client.put<GroupSplitResponse>(`/api/groups/${groupId}/split`, { projectId, newGroups });
   return resp.data;
 }
 
-async mergeGroups(projectId: string, groupIds: string[]): Promise<GroupMergeResponse> {
-  const resp = await this.client.post(`/api/projects/${projectId}/grouping/merge`, { group_ids: groupIds });
+export async function mergeGroups(projectId: string, groupIds: string[]): Promise<GroupMergeResponse> {
+  const resp = await client.post<GroupMergeResponse>(`/api/projects/${projectId}/grouping/merge`, { groupIds });
   return resp.data;
 }
 
-async markNotComparable(groupId: string): Promise<{ id: string; status: string }> {
-  const resp = await this.client.put(`/api/groups/${groupId}/not-comparable`);
+export async function markNotComparable(groupId: string, projectId: string): Promise<{ id: string; status: string }> {
+  const resp = await client.put<{ id: string; status: string }>(`/api/groups/${groupId}/not-comparable`, { projectId });
+  return resp.data;
+}
+
+export async function moveMember(groupId: string, projectId: string, targetGroupId: string, rowId: string): Promise<GroupMoveMemberResponse> {
+  const resp = await client.put<GroupMoveMemberResponse>(`/api/groups/${groupId}/move-member`, { projectId, targetGroupId, rowId });
   return resp.data;
 }
 ```
@@ -147,7 +152,7 @@ interface GroupingStageProps {
 // - selectedGroupIds: string[] — 选中的归组（用于合并）
 //
 // 主要交互：
-// - "生成归组" 按钮 → POST /api/projects/{id}/grouping/generate → 轮询任务 → 刷新列表
+// - "生成归组" 按钮 → POST /api/projects/{project_id}/grouping/generate → 轮询任务 → 刷新列表
 // - "重新生成" 按钮 → 确认后重新生成（会清除已有归组）
 // - 将 groups 按 confidence_level 分为三组传给 GroupCandidateList
 ```
@@ -187,10 +192,10 @@ interface GroupingStageProps {
 
 interface GroupCandidateListProps {
   groups: CommodityGroup[];
-  onConfirm: (groupId: string) => void;
+  onConfirm: (groupId: string, projectId: string) => void;
   onSplit: (groupId: string, newGroups: string[][]) => void;
   onMerge: (groupIds: string[]) => void;
-  onMarkNotComparable: (groupId: string) => void;
+  onMarkNotComparable: (groupId: string, projectId: string) => void;
 }
 
 // 置信度分层颜色：
@@ -250,7 +255,7 @@ pnpm tsc --noEmit            # exit 0
 | `pnpm lint` | exit 0 |
 | `pnpm tsc --noEmit` | exit 0 |
 | `grouping.ts` 类型与 openapi.json 一致 | 字段名和类型匹配 |
-| API 调用方法在 `api.ts` 中已定义 | 6 个方法（generate, list, confirm, split, merge, markNotComparable） |
+| API 调用函数在 `api.ts` 中已定义 | 7 个函数（generateGrouping, listGroups, confirmGroup, splitGroup, mergeGroups, markNotComparable, moveMember） |
 | 三种置信度分层展示 | 颜色区分正确 |
 
 ## 提交

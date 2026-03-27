@@ -288,7 +288,7 @@ class CommodityGrouper:
 
         Args:
             rows: standardized_rows 字典列表，每个 dict 至少包含：
-                  id, product_name, spec, unit, confidence, is_manually_modified, quantity
+                  id, product_name, spec_model, unit, confidence, is_manually_modified, quantity
 
         Returns:
             候选归组列表
@@ -312,7 +312,7 @@ class CommodityGrouper:
             result.append(_NormalizedRow(
                 row_id=row["id"],
                 normalized_name=normalize_product_name(row.get("product_name", "")),
-                spec_tokens=normalize_spec(row.get("spec", "")),
+                spec_tokens=normalize_spec(row.get("spec_model", "")),
                 normalized_unit=normalize_unit(row.get("unit", "")),
                 confidence=row.get("confidence", 1.0),
                 is_confirmed=bool(row.get("is_manually_modified", False)),
@@ -608,7 +608,7 @@ class TestCommodityGrouper:
 
     def test_single_row(self):
         grouper = CommodityGrouper()
-        rows = [{"id": "r1", "product_name": "联想 ThinkPad E14", "spec": "i5/16G", "unit": "台"}]
+        rows = [{"id": "r1", "product_name": "联想 ThinkPad E14", "spec_model": "i5/16G", "unit": "台"}]
         groups = grouper.generate_candidates(rows)
         assert len(groups) == 1
         assert groups[0].confidence_level == "low"  # 独立项
@@ -617,8 +617,8 @@ class TestCommodityGrouper:
     def test_identical_rows_grouped(self):
         grouper = CommodityGrouper()
         rows = [
-            {"id": "r1", "product_name": "联想 ThinkPad E14", "spec": "i5/16G/512G", "unit": "台"},
-            {"id": "r2", "product_name": "Lenovo ThinkPad E14", "spec": "i5/16G/512G", "unit": "台"},
+            {"id": "r1", "product_name": "联想 ThinkPad E14", "spec_model": "i5/16G/512G", "unit": "台"},
+            {"id": "r2", "product_name": "Lenovo ThinkPad E14", "spec_model": "i5/16G/512G", "unit": "台"},
         ]
         groups = grouper.generate_candidates(rows)
         # 两行应归为同一组
@@ -629,8 +629,8 @@ class TestCommodityGrouper:
     def test_unit_mismatch_not_grouped(self):
         grouper = CommodityGrouper()
         rows = [
-            {"id": "r1", "product_name": "联想 ThinkPad E14", "spec": "i5/16G", "unit": "台"},
-            {"id": "r2", "product_name": "联想 ThinkPad E14", "spec": "i5/16G", "unit": "个"},
+            {"id": "r1", "product_name": "联想 ThinkPad E14", "spec_model": "i5/16G", "unit": "台"},
+            {"id": "r2", "product_name": "联想 ThinkPad E14", "spec_model": "i5/16G", "unit": "个"},
         ]
         groups = grouper.generate_candidates(rows)
         # 单位不一致，不应自动归组
@@ -640,8 +640,8 @@ class TestCommodityGrouper:
     def test_different_products_separate(self):
         grouper = CommodityGrouper()
         rows = [
-            {"id": "r1", "product_name": "联想 ThinkPad E14", "spec": "i5/16G", "unit": "台"},
-            {"id": "r2", "product_name": "惠普 LaserJet M255dw", "spec": "M255dw", "unit": "台"},
+            {"id": "r1", "product_name": "联想 ThinkPad E14", "spec_model": "i5/16G", "unit": "台"},
+            {"id": "r2", "product_name": "惠普 LaserJet M255dw", "spec_model": "M255dw", "unit": "台"},
         ]
         groups = grouper.generate_candidates(rows)
         assert len(groups) == 2
@@ -652,11 +652,11 @@ class TestCommodityGrouper:
         """验收数据集核心场景：3 家供应商同一商品"""
         grouper = CommodityGrouper()
         rows = [
-            {"id": "r1", "product_name": "联想ThinkPad E14笔记本电脑", "spec": "i5/16G/512G", "unit": "台",
+            {"id": "r1", "product_name": "联想ThinkPad E14笔记本电脑", "spec_model": "i5/16G/512G", "unit": "台",
              "confidence": 1.0},
-            {"id": "r2", "product_name": "Lenovo E14笔记本", "spec": "i5-1235U, 16GB, 512GB SSD", "unit": "台",
+            {"id": "r2", "product_name": "Lenovo E14笔记本", "spec_model": "i5-1235U, 16GB, 512GB SSD", "unit": "台",
              "confidence": 1.0},
-            {"id": "r3", "product_name": "thinkpad e14", "spec": "i5/16G/512G", "unit": "台",
+            {"id": "r3", "product_name": "thinkpad e14", "spec_model": "i5/16G/512G", "unit": "台",
              "confidence": 1.0},
         ]
         groups = grouper.generate_candidates(rows)
@@ -667,8 +667,8 @@ class TestCommodityGrouper:
     def test_confidence_level_assignment(self):
         grouper = CommodityGrouper()
         rows = [
-            {"id": "r1", "product_name": "联想 ThinkPad E14", "spec": "i5/16G/512G", "unit": "台"},
-            {"id": "r2", "product_name": "联想 ThinkPad E14", "spec": "i5/16G/512G", "unit": "台"},
+            {"id": "r1", "product_name": "联想 ThinkPad E14", "spec_model": "i5/16G/512G", "unit": "台"},
+            {"id": "r2", "product_name": "联想 ThinkPad E14", "spec_model": "i5/16G/512G", "unit": "台"},
         ]
         groups = grouper.generate_candidates(rows)
         grouped = [g for g in groups if len(g.member_row_ids) > 1]
@@ -678,8 +678,8 @@ class TestCommodityGrouper:
     def test_match_reason_not_empty(self):
         grouper = CommodityGrouper()
         rows = [
-            {"id": "r1", "product_name": "联想 E14", "spec": "i5", "unit": "台"},
-            {"id": "r2", "product_name": "联想 E14", "spec": "i5", "unit": "台"},
+            {"id": "r1", "product_name": "联想 E14", "spec_model": "i5", "unit": "台"},
+            {"id": "r2", "product_name": "联想 E14", "spec_model": "i5", "unit": "台"},
         ]
         groups = grouper.generate_candidates(rows)
         for g in groups:

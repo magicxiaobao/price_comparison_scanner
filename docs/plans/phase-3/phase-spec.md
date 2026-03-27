@@ -203,13 +203,13 @@ import json
 with open('../docs/api/openapi.json') as f:
     spec = json.load(f)
 paths = list(spec.get('paths', {}).keys())
-assert '/api/projects/{id}/grouping/generate' in paths, 'Missing grouping generate'
-assert '/api/projects/{id}/groups' in paths, 'Missing groups list'
-assert '/api/groups/{id}/confirm' in paths, 'Missing confirm'
-assert '/api/groups/{id}/split' in paths, 'Missing split'
-assert '/api/projects/{id}/grouping/merge' in paths, 'Missing merge'
-assert '/api/groups/{id}/not-comparable' in paths, 'Missing not-comparable'
-assert '/api/groups/{id}/move-member' in paths, 'Missing move-member'
+assert '/api/projects/{project_id}/grouping/generate' in paths, 'Missing grouping generate'
+assert '/api/projects/{project_id}/groups' in paths, 'Missing groups list'
+assert '/api/groups/{group_id}/confirm' in paths, 'Missing confirm'
+assert '/api/groups/{group_id}/split' in paths, 'Missing split'
+assert '/api/projects/{project_id}/grouping/merge' in paths, 'Missing merge'
+assert '/api/groups/{group_id}/not-comparable' in paths, 'Missing not-comparable'
+assert '/api/groups/{group_id}/move-member' in paths, 'Missing move-member'
 print(f'✓ openapi.json 归组 API: 7 个路径已定义')
 "
 ```

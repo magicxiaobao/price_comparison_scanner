@@ -29,7 +29,7 @@
 **触发**：归组卡片上的 "确认" 按钮（仅 candidate 状态可见）
 
 **流程**：
-1. 点击 "确认" → 调用 `PUT /api/groups/{id}/confirm`
+1. 点击 "确认" → 调用 `PUT /api/groups/{group_id}/confirm`，请求体: `{ projectId }`
 2. 成功后更新该归组状态为 `confirmed`
 3. 归组卡片显示绿色 "已确认" 标签
 4. 已确认的归组不再显示 "确认" 按钮
@@ -45,7 +45,7 @@
 1. 点击 "拆分" → 弹出 GroupSplitDialog
 2. 对话框中展示该归组的所有成员
 3. 用户通过勾选将成员分为两组（至少两组，每组至少一个成员）
-4. 点击 "确认拆分" → 调用 `PUT /api/groups/{id}/split`
+4. 点击 "确认拆分" → 调用 `PUT /api/groups/{group_id}/split`
 5. 成功后刷新归组列表
 
 **约束**：
@@ -60,7 +60,7 @@
 **流程**：
 1. 用户在归组列表中勾选多个归组
 2. 点击 "合并选中" → 确认对话框
-3. 确认后 → 调用 `POST /api/projects/{id}/grouping/merge`
+3. 确认后 → 调用 `POST /api/projects/{project_id}/grouping/merge`
 4. 成功后刷新归组列表
 
 **约束**：
@@ -73,7 +73,7 @@
 
 **流程**：
 1. 点击 → 确认对话框（"标记为不可比后，该归组将不参与比价"）
-2. 确认后 → 调用 `PUT /api/groups/{id}/not-comparable`
+2. 确认后 → 调用 `PUT /api/groups/{group_id}/not-comparable`，请求体: `{ projectId }`
 3. 成功后归组卡片显示红色 "不可比" 标签
 
 **约束**：
@@ -117,14 +117,14 @@
 <div className="flex gap-2 mt-2">
   {/* 确认按钮 — 仅 candidate 状态 */}
   {group.status === "candidate" && (
-    <button onClick={() => onConfirm(group.id)}
+    <button onClick={() => onConfirm(group.id, group.projectId)}
             className="text-sm bg-green-500 text-white px-3 py-1 rounded">
       确认
     </button>
   )}
 
   {/* 拆分按钮 — 成员 >= 2 */}
-  {group.member_count >= 2 && group.status === "candidate" && (
+  {group.memberCount >= 2 && group.status === "candidate" && (
     <button onClick={() => openSplitDialog(group)}
             className="text-sm bg-yellow-500 text-white px-3 py-1 rounded">
       拆分
@@ -133,7 +133,7 @@
 
   {/* 标记不可比 — 非 not_comparable 状态 */}
   {group.status !== "not_comparable" && (
-    <button onClick={() => onMarkNotComparable(group.id)}
+    <button onClick={() => onMarkNotComparable(group.id, group.projectId)}
             className="text-sm bg-red-500 text-white px-3 py-1 rounded">
       不可比
     </button>
