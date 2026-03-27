@@ -2,6 +2,11 @@
 
 > **文档优先级：** 本 phase-spec 及其下属 task-spec 的内容优先于 master-plan。若 master-plan 中有与本文档冲突的描述，以本文档为准。
 
+## 前置条件
+
+- Phase 1 全部任务已完成（10/10），P1 阻塞项已修复（commit `39cc91d`）
+- **Phase 1 carry-over 必带项已收口或已纳入本 Phase 执行波次**（详见 [`carry-over.md`](carry-over.md)）
+
 ## 目标
 
 实现全局规则管理（列名映射 + 值标准化）和表格标准化引擎，用户可通过规则将导入的原始表格统一映射为 9 个标准字段，预览标准化结果并进行手工修正。同时引入 AuditLogService 操作留痕和失效传播机制，为后续归组/比价阶段提供数据基础。
@@ -115,17 +120,18 @@ app_data/rules/
 ```
 Phase 1 完成
   │
-  └── 2.6 Pydantic 模型 ─────────────────────────────────────┐
-      │                                                       │
-      ├── 2.1 AuditLogService ─────────────────────┐         │
-      │                                             │         │
-      └── 2.2 RuleEngine ──┬── 2.3 规则 API ───┐   │         │
-                            │                   │   │         │
-                            └── 2.4 Standardizer┼───┤         │
-                                                │   │         │
-                                                └───┘         │
-                                                │             │
-                                           2.5 标准化 API ────┘
+  ├── 2.1 AuditLogService ─────────────────────────┐
+  │   (仅依赖 Phase 1，与 2.6 无硬依赖)             │
+  │                                                 │
+  └── 2.6 Pydantic 模型 ───────────────────────┐   │
+      │                                         │   │
+      └── 2.2 RuleEngine ──┬── 2.3 规则 API ───┤   │
+                            │                   │   │
+                            └── 2.4 Standardizer┤   │
+                                                │   │
+                                                └───┘
+                                                │
+                                           2.5 标准化 API
                                                 │
                                      ┌──────────┘
                                      │
@@ -145,13 +151,14 @@ Phase 1 完成
 
 ### 并行化机会
 
+- **Preflight（carry-over 必带项）：** B4（python-multipart 依赖，已验证修复）+ B2（tasks.py response_model）+ B3（raw_data 反序列化）由 backend-dev 修复；F1（SupplierConfirmDialog stale name）由 frontend-dev 修复。详见 [`carry-over.md`](carry-over.md)。Preflight 全部确认通过后进入正式 Wave。
 - **第一波：** 2.6（Pydantic 模型）— 无前置依赖，后端其他任务的类型基础
-- **第二波（并行）：** 2.1（AuditLog）+ 2.2（RuleEngine）— 均依赖 2.6
-- **第三波（并行）：** 2.3（规则 API，依赖 2.2）+ 2.4（Standardizer，依赖 2.2 + 2.6）
+- **第二波（同波次）：** 2.1（AuditLog）+ 2.2（RuleEngine）。2.2 硬依赖 2.6；2.1 无硬依赖 2.6，排入本波次为推荐执行顺序（确保 Pydantic 模型就绪后再开始业务模块）。可并行仅在有多个 backend agent 时成立。
+- **第三波（同波次）：** 2.3（规则 API，依赖 2.2）+ 2.4（Standardizer，依赖 2.2 + 2.6）。单 backend-dev 时串行执行。
 - **第四波：** 2.5（标准化 API，依赖 2.1 + 2.4 + 2.6）
 - **第五波：** 2.10（openapi.json 生成 + reviewer 后端审查，依赖 2.3 + 2.5）— 前端开工的契约基线
 - **第六波：** 2.9（RuleStore，依赖 2.3 + 2.10）
-- **第七波（并行）：** 2.7（RuleManagement，依赖 2.9 + 2.10）+ 2.8（StandardizeStage，依赖 2.5 + 2.10）
+- **第七波（同波次）：** 2.7（RuleManagement，依赖 2.9 + 2.10）+ 2.8（StandardizeStage，依赖 2.5 + 2.10）。单 frontend-dev 时串行执行。
 
 ---
 
