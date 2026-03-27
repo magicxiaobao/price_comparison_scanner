@@ -74,6 +74,8 @@ class MatchResult(BaseModel):
     conflicts: list[ColumnMappingRule] = Field(default_factory=list)
     resolution: str | None = None
 
+    model_config = {"populate_by_name": True}
+
 
 class RuleTestRequest(BaseModel):
     """规则测试请求"""
