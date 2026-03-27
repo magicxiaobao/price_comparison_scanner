@@ -406,10 +406,11 @@ Leader（Claude Code 主进程）
 | `complex-api-integration-expert` | **强制** | 对接后端 API 时，必须先读取 openapi.json |
 | `form-field-mapping-expert` | **强制** | 实现表单（需求标准录入、规则编辑、手工修正）时 |
 | `webapp-testing` | 推荐 | 验证前端功能时 |
-| `acejou27-shadcn-ui` | 推荐 | 需要查询 shadcn 组件用法时 |
+| `acejou27-shadcn-ui` | **强制** | 创建或修改 shadcn/ui 组件时 |
 
 **frontend-dev MCP 强制规则**：
 - 首次使用 TanStack Table / dnd-kit / Zustand / Tauri API → **必须**先用 Context7 查文档
+- 使用 shadcn/ui 组件时 → **必须**先用 `shadcn-ui` MCP（`get_component` / `get_component_demo`）查询组件源码和用法，不凭记忆猜 props
 - 遇到 Tauri sidecar 机制技术难题 → **必须**用 DeepWiki 查询 `tauri-apps/tauri`
 
 ### 新会话恢复
