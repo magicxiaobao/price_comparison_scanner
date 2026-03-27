@@ -1,13 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { FileUploadResponse, RawTable, SupplierFile } from "../../types/file";
 import type { TaskInfo } from "../../types/task";
-import { getTaskStatus, listFiles, listTables } from "../../lib/api";
+import { getTaskStatus } from "../../lib/api";
+import { useProjectStore } from "../../stores/project-store";
 import { FileUploader } from "./file-uploader";
 import { SupplierConfirmDialog } from "./supplier-confirm-dialog";
 import { TableSelector } from "./table-selector";
 
 interface ImportStageProps {
   projectId: string;
+  files: SupplierFile[];
+  tables: RawTable[];
 }
 
 /** 单个文件的上传+解析追踪信息 */
@@ -29,9 +32,10 @@ interface ConfirmDialogState {
   originalFilename: string;
 }
 
-export function ImportStage({ projectId }: ImportStageProps) {
-  const [files, setFiles] = useState<SupplierFile[]>([]);
-  const [tables, setTables] = useState<RawTable[]>([]);
+export function ImportStage({ projectId, files, tables }: ImportStageProps) {
+  const { loadFiles, loadTables, addUploadTask, updateTaskStatus, removeTask, importProgress } =
+    useProjectStore();
+
   const [trackers, setTrackers] = useState<Map<string, FileTracker>>(new Map());
   const [error, setError] = useState<string | null>(null);
   const [confirmDialog, setConfirmDialog] = useState<ConfirmDialogState>({
@@ -41,12 +45,6 @@ export function ImportStage({ projectId }: ImportStageProps) {
     originalFilename: "",
   });
   const pollTimers = useRef<Map<string, ReturnType<typeof setInterval>>>(new Map());
-
-  // 加载已有文件列表和表格列表
-  useEffect(() => {
-    listFiles(projectId).then(setFiles).catch(() => {});
-    listTables(projectId).then(setTables).catch(() => {});
-  }, [projectId]);
 
   // 清理轮询定时器
   useEffect(() => {
@@ -59,29 +57,17 @@ export function ImportStage({ projectId }: ImportStageProps) {
     };
   }, []);
 
-  const refreshFiles = useCallback(async () => {
-    try {
-      const updated = await listFiles(projectId);
-      setFiles(updated);
-    } catch {
-      // 静默处理
-    }
-  }, [projectId]);
-
-  const refreshTables = useCallback(async () => {
-    try {
-      const updated = await listTables(projectId);
-      setTables(updated);
-    } catch {
-      // 静默处理
-    }
-  }, [projectId]);
+  const refreshData = useCallback(async () => {
+    await Promise.all([loadFiles(projectId), loadTables(projectId)]);
+  }, [projectId, loadFiles, loadTables]);
 
   const startPolling = useCallback(
     (tracker: FileTracker) => {
       const timer = setInterval(async () => {
         try {
           const info: TaskInfo = await getTaskStatus(tracker.taskId);
+          updateTaskStatus(tracker.taskId, info);
+
           setTrackers((prev) => {
             const next = new Map(prev);
             const current = next.get(tracker.fileId);
@@ -91,8 +77,8 @@ export function ImportStage({ projectId }: ImportStageProps) {
               next.set(tracker.fileId, { ...current, status: "completed", progress: 1 });
               clearInterval(pollTimers.current.get(tracker.fileId)!);
               pollTimers.current.delete(tracker.fileId);
-              refreshFiles();
-              refreshTables();
+              removeTask(tracker.taskId);
+              refreshData();
             } else if (info.status === "failed" || info.status === "cancelled") {
               next.set(tracker.fileId, {
                 ...current,
@@ -102,6 +88,7 @@ export function ImportStage({ projectId }: ImportStageProps) {
               });
               clearInterval(pollTimers.current.get(tracker.fileId)!);
               pollTimers.current.delete(tracker.fileId);
+              removeTask(tracker.taskId);
             } else {
               next.set(tracker.fileId, { ...current, progress: info.progress });
             }
@@ -113,11 +100,13 @@ export function ImportStage({ projectId }: ImportStageProps) {
       }, 1000);
       pollTimers.current.set(tracker.fileId, timer);
     },
-    [refreshFiles, refreshTables],
+    [refreshData, updateTaskStatus, removeTask],
   );
 
   const handleUploadComplete = useCallback(
     (resp: FileUploadResponse, filename: string) => {
+      addUploadTask(resp.task_id, resp.file_id);
+
       const tracker: FileTracker = {
         fileId: resp.file_id,
         taskId: resp.task_id,
@@ -134,7 +123,7 @@ export function ImportStage({ projectId }: ImportStageProps) {
       });
       startPolling(tracker);
     },
-    [startPolling],
+    [startPolling, addUploadTask],
   );
 
   const handleError = useCallback((msg: string) => {
@@ -152,17 +141,20 @@ export function ImportStage({ projectId }: ImportStageProps) {
   const handleSupplierConfirmed = useCallback(
     (_supplierName: string) => {
       setConfirmDialog({ open: false, fileId: "", suggestedName: "", originalFilename: "" });
-      refreshFiles();
-      refreshTables();
+      refreshData();
     },
-    [refreshFiles, refreshTables],
+    [refreshData],
   );
 
   const handleTableSelectionChange = useCallback(
     (tableId: string, selected: boolean) => {
-      setTables((prev) =>
-        prev.map((t) => (t.id === tableId ? { ...t, selected } : t)),
-      );
+      // 乐观更新 Store 中的 tables（Store 里的 tables 由 loadTables 管理，
+      // 这里直接更新 Store 以保持一致性）
+      useProjectStore.setState((state) => ({
+        tables: state.tables.map((t) =>
+          t.id === tableId ? { ...t, selected } : t,
+        ),
+      }));
     },
     [],
   );
@@ -174,12 +166,7 @@ export function ImportStage({ projectId }: ImportStageProps) {
   ]);
 
   // 汇总信息
-  const confirmedCount = files.filter((f) => f.supplier_confirmed).length;
-  const allConfirmed = files.length > 0 && confirmedCount === files.length;
-  const selectedTableCount = tables.filter((t) => t.selected).length;
-  const uniqueSuppliers = new Set(
-    files.filter((f) => f.supplier_confirmed).map((f) => f.supplier_name),
-  );
+  const progress = importProgress();
 
   return (
     <div className="space-y-6">
@@ -226,9 +213,9 @@ export function ImportStage({ projectId }: ImportStageProps) {
       )}
 
       {/* 汇总信息 */}
-      {allConfirmed && (
+      {progress.allConfirmed && (
         <div className="rounded-md bg-green-50 p-3 text-sm text-green-700">
-          确认完成，可进入下一步 — {uniqueSuppliers.size} 个供应商，{selectedTableCount} 个表格参与比价
+          确认完成，可进入下一步 — {progress.confirmedFiles} 个供应商，{progress.selectedTables} 个表格参与比价
         </div>
       )}
 

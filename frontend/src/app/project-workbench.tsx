@@ -1,8 +1,20 @@
+import { useEffect } from "react";
 import { useParams } from "react-router-dom";
+import { useProjectStore } from "../stores/project-store";
 import { ImportStage } from "../components/stages/import-stage";
 
 function ProjectWorkbench() {
   const { id } = useParams<{ id: string }>();
+  const { loadProject, loadFiles, loadTables, files, tables } =
+    useProjectStore();
+
+  useEffect(() => {
+    if (id) {
+      loadProject(id);
+      loadFiles(id);
+      loadTables(id);
+    }
+  }, [id, loadProject, loadFiles, loadTables]);
 
   if (!id) {
     return (
@@ -16,7 +28,7 @@ function ProjectWorkbench() {
     <div className="min-h-screen bg-gray-50 p-8">
       <h1 className="text-xl font-bold">项目工作台</h1>
       <div className="mt-6">
-        <ImportStage projectId={id} />
+        <ImportStage projectId={id} files={files} tables={tables} />
       </div>
     </div>
   );

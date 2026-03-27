@@ -1,28 +1,44 @@
 import { create } from "zustand";
 import type { ProjectSummary, ProjectDetail } from "../types/project";
+import type { SupplierFile, RawTable } from "../types/file";
+import type { TaskInfo } from "../types/task";
 import * as api from "../lib/api";
 
+interface ImportProgress {
+  totalFiles: number;
+  confirmedFiles: number;
+  selectedTables: number;
+  totalTables: number;
+  allConfirmed: boolean;
+}
+
 interface ProjectStore {
-  /** 最近项目列表 */
+  // === Phase 0 已有 ===
   projects: ProjectSummary[];
-  /** 当前打开的项目 */
   currentProject: ProjectDetail | null;
-  /** 加载状态 */
   isLoading: boolean;
 
-  /** 加载项目列表 */
   loadProjects: () => Promise<void>;
-  /** 加载项目详情 */
   loadProject: (id: string) => Promise<void>;
-  /** 创建项目 */
   createProject: (name: string) => Promise<ProjectDetail>;
-  /** 删除项目 */
   deleteProject: (id: string) => Promise<void>;
-  /** 清除当前项目 */
   clearProject: () => void;
+
+  // === Phase 1 新增 ===
+  files: SupplierFile[];
+  tables: RawTable[];
+  activeTasks: Record<string, TaskInfo>;
+
+  loadFiles: (projectId: string) => Promise<void>;
+  loadTables: (projectId: string) => Promise<void>;
+  addUploadTask: (taskId: string, fileId: string) => void;
+  updateTaskStatus: (taskId: string, status: TaskInfo) => void;
+  removeTask: (taskId: string) => void;
+  importProgress: () => ImportProgress;
 }
 
 export const useProjectStore = create<ProjectStore>((set, get) => ({
+  // === Phase 0 ===
   projects: [],
   currentProject: null,
   isLoading: false,
@@ -53,5 +69,63 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
     }
   },
 
-  clearProject: () => set({ currentProject: null }),
+  clearProject: () =>
+    set({ currentProject: null, files: [], tables: [], activeTasks: {} }),
+
+  // === Phase 1 新增 ===
+  files: [],
+  tables: [],
+  activeTasks: {},
+
+  loadFiles: async (projectId: string) => {
+    const files = await api.listFiles(projectId);
+    set({ files });
+  },
+
+  loadTables: async (projectId: string) => {
+    const tables = await api.listTables(projectId);
+    set({ tables });
+  },
+
+  addUploadTask: (taskId: string, _fileId: string) => {
+    const placeholder: TaskInfo = {
+      task_id: taskId,
+      task_type: "parse_file",
+      status: "queued",
+      progress: 0,
+      error: null,
+      created_at: new Date().toISOString(),
+      started_at: null,
+      completed_at: null,
+    };
+    set((state) => ({
+      activeTasks: { ...state.activeTasks, [taskId]: placeholder },
+    }));
+  },
+
+  updateTaskStatus: (taskId: string, status: TaskInfo) => {
+    set((state) => ({
+      activeTasks: { ...state.activeTasks, [taskId]: status },
+    }));
+  },
+
+  removeTask: (taskId: string) => {
+    set((state) => {
+      const next = { ...state.activeTasks };
+      delete next[taskId];
+      return { activeTasks: next };
+    });
+  },
+
+  importProgress: () => {
+    const { files, tables } = get();
+    const confirmedFiles = files.filter((f) => f.supplier_confirmed).length;
+    return {
+      totalFiles: files.length,
+      confirmedFiles,
+      selectedTables: tables.filter((t) => t.selected).length,
+      totalTables: tables.length,
+      allConfirmed: files.length > 0 && confirmedFiles === files.length,
+    };
+  },
 }));
