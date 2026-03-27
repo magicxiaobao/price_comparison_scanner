@@ -234,7 +234,7 @@ class ProjectService:
             target_id=row_id,
             field_name=field,
             before_value=old_value,
-            after_value=new_value,
+            after_value=str(new_value) if new_value is not None else None,
         )
 
         # 失效传播

@@ -1170,7 +1170,8 @@
               "type": "string"
             },
             "type": "array",
-            "title": "Dirtystages"
+            "title": "Dirtystages",
+            "default": []
           }
         },
         "type": "object",
@@ -1732,7 +1733,7 @@
             "type": "integer",
             "title": "Rowindex"
           },
-          "product_name": {
+          "productName": {
             "anyOf": [
               {
                 "type": "string"
@@ -1741,9 +1742,9 @@
                 "type": "null"
               }
             ],
-            "title": "Product Name"
+            "title": "Productname"
           },
-          "spec_model": {
+          "specModel": {
             "anyOf": [
               {
                 "type": "string"
@@ -1752,7 +1753,7 @@
                 "type": "null"
               }
             ],
-            "title": "Spec Model"
+            "title": "Specmodel"
           },
           "unit": {
             "anyOf": [
@@ -1776,7 +1777,7 @@
             ],
             "title": "Quantity"
           },
-          "unit_price": {
+          "unitPrice": {
             "anyOf": [
               {
                 "type": "number"
@@ -1785,9 +1786,9 @@
                 "type": "null"
               }
             ],
-            "title": "Unit Price"
+            "title": "Unitprice"
           },
-          "total_price": {
+          "totalPrice": {
             "anyOf": [
               {
                 "type": "number"
@@ -1796,9 +1797,9 @@
                 "type": "null"
               }
             ],
-            "title": "Total Price"
+            "title": "Totalprice"
           },
-          "tax_rate": {
+          "taxRate": {
             "anyOf": [
               {
                 "type": "string"
@@ -1807,9 +1808,9 @@
                 "type": "null"
               }
             ],
-            "title": "Tax Rate"
+            "title": "Taxrate"
           },
-          "delivery_period": {
+          "deliveryPeriod": {
             "anyOf": [
               {
                 "type": "string"
@@ -1818,7 +1819,7 @@
                 "type": "null"
               }
             ],
-            "title": "Delivery Period"
+            "title": "Deliveryperiod"
           },
           "remark": {
             "anyOf": [

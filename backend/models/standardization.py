@@ -1,6 +1,14 @@
 from __future__ import annotations
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict
+
+
+def _to_camel(name: str) -> str:
+    parts = name.split("_")
+    return parts[0] + "".join(w.capitalize() for w in parts[1:])
+
+
+_CAMEL_CONFIG = ConfigDict(alias_generator=_to_camel, populate_by_name=True)
 
 
 class SourceLocationItem(BaseModel):
@@ -57,10 +65,12 @@ class StandardizedRowCreate(BaseModel):
 class StandardizedRowResponse(BaseModel):
     """标准化行响应模型"""
 
+    model_config = _CAMEL_CONFIG
+
     id: str
-    raw_table_id: str = Field(..., alias="rawTableId")
-    supplier_file_id: str = Field(..., alias="supplierFileId")
-    row_index: int = Field(..., alias="rowIndex")
+    raw_table_id: str
+    supplier_file_id: str
+    row_index: int
     product_name: str | None = None
     spec_model: str | None = None
     unit: str | None = None
@@ -70,36 +80,32 @@ class StandardizedRowResponse(BaseModel):
     tax_rate: str | None = None
     delivery_period: str | None = None
     remark: str | None = None
-    source_location: SourceLocation = Field(..., alias="sourceLocation")
-    column_mapping: dict[str, str] | None = Field(None, alias="columnMapping")
-    hit_rule_snapshots: list[HitRuleSnapshot] | None = Field(
-        None, alias="hitRuleSnapshots"
-    )
+    source_location: SourceLocation
+    column_mapping: dict[str, str] | None = None
+    hit_rule_snapshots: list[HitRuleSnapshot] | None = None
     confidence: float = 1.0
-    is_manually_modified: bool = Field(False, alias="isManuallyModified")
-    needs_review: bool = Field(False, alias="needsReview")
-    tax_basis: str | None = Field(None, alias="taxBasis")
-
-    model_config = {"populate_by_name": True}
+    is_manually_modified: bool = False
+    needs_review: bool = False
+    tax_basis: str | None = None
 
 
 class FieldModifyRequest(BaseModel):
     """手工修正请求"""
 
-    field: str
-    new_value: str | float | None = Field(..., alias="newValue")
+    model_config = _CAMEL_CONFIG
 
-    model_config = {"populate_by_name": True}
+    field: str
+    new_value: str | float | None
 
 
 class FieldModifyResponse(BaseModel):
     """手工修正响应"""
 
-    success: bool
-    audit_log: dict = Field(..., alias="auditLog")
-    dirty_stages: list[str] = Field(default_factory=list, alias="dirtyStages")
+    model_config = _CAMEL_CONFIG
 
-    model_config = {"populate_by_name": True}
+    success: bool
+    audit_log: dict
+    dirty_stages: list[str] = []
 
 
 class StandardizeRequest(BaseModel):
@@ -111,6 +117,6 @@ class StandardizeRequest(BaseModel):
 class StandardizeTaskResponse(BaseModel):
     """标准化执行响应"""
 
-    task_id: str = Field(..., alias="taskId")
+    model_config = _CAMEL_CONFIG
 
-    model_config = {"populate_by_name": True}
+    task_id: str

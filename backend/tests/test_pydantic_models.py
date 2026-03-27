@@ -39,7 +39,7 @@ class TestColumnMappingRule:
             "priority": 100,
             "createdAt": "2026-03-27T00:00:00Z",
         }
-        rule = ColumnMappingRule(**data)
+        rule = ColumnMappingRule.model_validate(data)
         assert rule.id == "r1"
         assert rule.source_keywords == ["单价", "报价"]
         assert rule.target_field == "unit_price"
@@ -88,7 +88,7 @@ class TestValueNormalizationRule:
             "replaceWith": "个",
             "createdAt": "2026-03-27T00:00:00Z",
         }
-        rule = ValueNormalizationRule(**data)
+        rule = ValueNormalizationRule.model_validate(data)
         assert rule.replace_with == "个"
         assert rule.type == RuleType.value_normalization
 
@@ -108,7 +108,7 @@ class TestRuleSet:
             ],
             "valueNormalizationRules": [],
         }
-        rs = RuleSet(**data)
+        rs = RuleSet.model_validate(data)
         assert len(rs.column_mapping_rules) == 1
         assert rs.column_mapping_rules[0].target_field == "unit_price"
 
@@ -144,11 +144,11 @@ class TestMatchResult:
 
 class TestRuleTestRequestResponse:
     def test_request_camel(self) -> None:
-        req = RuleTestRequest(columnName="单价")
+        req = RuleTestRequest.model_validate({"columnName": "单价"})
         assert req.column_name == "单价"
 
     def test_response(self) -> None:
-        resp = RuleTestResponse(matched=True, targetField="unit_price")
+        resp = RuleTestResponse.model_validate({"matched": True, "targetField": "unit_price"})
         assert resp.target_field == "unit_price"
 
 
@@ -162,8 +162,8 @@ class TestRuleCreateUpdate:
     def test_column_mapping(self) -> None:
         r = RuleCreateUpdate(
             type=RuleType.column_mapping,
-            sourceKeywords=["单价"],
-            targetField="unit_price",
+            source_keywords=["单价"],
+            target_field="unit_price",
         )
         assert r.source_keywords == ["单价"]
 
@@ -172,14 +172,14 @@ class TestRuleCreateUpdate:
             type=RuleType.value_normalization,
             field="unit",
             patterns=["个", "只"],
-            replaceWith="个",
+            replace_with="个",
         )
         assert r.replace_with == "个"
 
 
 class TestTemplateInfo:
     def test_basic(self) -> None:
-        t = TemplateInfo(id="t1", name="通用采购", description="默认模板", ruleCount=15)
+        t = TemplateInfo(id="t1", name="通用采购", description="默认模板", rule_count=15)
         assert t.rule_count == 15
 
 
@@ -250,10 +250,10 @@ class TestStandardizedRowResponse:
     def test_serialize_camel(self) -> None:
         row = StandardizedRowResponse(
             id="sr1",
-            rawTableId="t1",
-            supplierFileId="f1",
-            rowIndex=0,
-            sourceLocation={},
+            raw_table_id="t1",
+            supplier_file_id="f1",
+            row_index=0,
+            source_location={},
         )
         d = row.model_dump(by_alias=True)
         assert "rawTableId" in d
@@ -276,18 +276,18 @@ class TestStandardizedRowResponse:
 
 class TestFieldModifyRequestResponse:
     def test_request(self) -> None:
-        req = FieldModifyRequest(field="unit_price", newValue=100.5)
+        req = FieldModifyRequest(field="unit_price", new_value=100.5)
         assert req.new_value == 100.5
 
     def test_request_null_value(self) -> None:
-        req = FieldModifyRequest(field="remark", newValue=None)
+        req = FieldModifyRequest(field="remark", new_value=None)
         assert req.new_value is None
 
     def test_response(self) -> None:
         resp = FieldModifyResponse(
             success=True,
-            auditLog={"id": "log1"},
-            dirtyStages=["grouping", "comparison"],
+            audit_log={"id": "log1"},
+            dirty_stages=["grouping", "comparison"],
         )
         assert resp.dirty_stages == ["grouping", "comparison"]
 
@@ -300,7 +300,7 @@ class TestStandardizeRequest:
 
 class TestStandardizeTaskResponse:
     def test_camel(self) -> None:
-        resp = StandardizeTaskResponse(taskId="task-123")
+        resp = StandardizeTaskResponse(task_id="task-123")
         assert resp.task_id == "task-123"
         d = resp.model_dump(by_alias=True)
         assert "taskId" in d

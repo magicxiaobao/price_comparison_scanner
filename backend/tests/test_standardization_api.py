@@ -121,7 +121,7 @@ async def test_standardize_creates_rows(client: AsyncClient, tmp_path: object) -
     assert rows_resp.status_code == 200
     rows = rows_resp.json()
     assert len(rows) == 2
-    assert rows[0]["product_name"] is not None
+    assert rows[0]["productName"] is not None
 
 
 @pytest.mark.anyio

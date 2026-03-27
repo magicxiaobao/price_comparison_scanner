@@ -303,14 +303,14 @@ class RuleEngine:
                     return updated
 
         if rule_type == RuleType.value_normalization:
-            for i, r in enumerate(rs.value_normalization_rules):
-                if r.id == rule_id:
+            for i, vr in enumerate(rs.value_normalization_rules):
+                if vr.id == rule_id:
                     updated_vn = ValueNormalizationRule(
                         id=rule_id,
-                        field=rule_data.get("field", r.field),
-                        patterns=rule_data.get("patterns", r.patterns),
-                        replace_with=rule_data.get("replaceWith") or rule_data.get("replace_with", r.replace_with),
-                        created_at=r.created_at,
+                        field=rule_data.get("field") or vr.field,
+                        patterns=rule_data.get("patterns") or vr.patterns,
+                        replace_with=rule_data.get("replaceWith") or rule_data.get("replace_with") or vr.replace_with,
+                        created_at=vr.created_at,
                     )
                     rs.value_normalization_rules[i] = updated_vn
                     rs.last_updated = datetime.now(UTC).isoformat()
@@ -389,8 +389,8 @@ class RuleEngine:
                     existing_keywords[kw.lower()] = rule.id
                 added += 1
 
-        for rule in imported_rules.value_normalization_rules:
-            current.value_normalization_rules.append(rule)
+        for vn_rule in imported_rules.value_normalization_rules:
+            current.value_normalization_rules.append(vn_rule)
             added += 1
 
         current.last_updated = datetime.now(UTC).isoformat()

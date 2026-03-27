@@ -116,4 +116,4 @@ class StandardizedRowRepo:
                 d[json_field] = json.loads(d[json_field])
         d["is_manually_modified"] = bool(d.get("is_manually_modified"))
         d["needs_review"] = bool(d.get("needs_review"))
-        return d
+        return dict(d)

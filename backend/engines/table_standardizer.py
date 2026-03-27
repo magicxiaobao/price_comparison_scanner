@@ -358,7 +358,7 @@ class TableStandardizer:
         try:
             if isinstance(value, str):
                 value = value.replace(",", "").replace("¥", "").replace("￥", "").replace(" ", "")
-            return float(value)
+            return float(str(value))
         except (ValueError, TypeError):
             return None
 
