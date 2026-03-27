@@ -1,4 +1,9 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { DndContext, DragOverlay, DragStartEvent, DragEndEvent, pointerWithin } from '@dnd-kit/core';
+import { useProjectStore } from "../../stores/project-store";
+import { moveMember } from "../../lib/api";
+import { DraggableMemberRow } from "./group-drag-zone";
+import type { GroupMemberSummary } from "../../types/grouping";
 import { useGroupingStore } from "../../stores/grouping-store";
 import { GroupCandidateList } from "./group-candidate-list";
 import { Button } from "../ui/button";
@@ -12,6 +17,49 @@ interface GroupingStageProps {
 
 export function GroupingStage({ projectId }: GroupingStageProps) {
   const { groups, loadGroups, generateGrouping, isGenerating, isLoading, error, selectedGroupId, selectGroup } = useGroupingStore();
+  const [activeDragItem, setActiveDragItem] = useState<{ member: GroupMemberSummary, sourceGroupId: string } | null>(null);
+  const [isMoving, setIsMoving] = useState(false);
+  const [dragError, setDragError] = useState<string | null>(null);
+
+  const handleDragStart = (event: DragStartEvent) => {
+    setDragError(null);
+    const { active } = event;
+    if (active.data.current?.type === 'member') {
+      setActiveDragItem(active.data.current as { member: GroupMemberSummary, sourceGroupId: string });
+    }
+  };
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    setActiveDragItem(null);
+
+    if (!over) return;
+    if (active.data.current?.type !== 'member') return;
+    if (over.data.current?.type !== 'group') return;
+
+    const sourceGroupId = active.data.current.sourceGroupId as string;
+    const targetGroupId = over.id as string;
+    const memberId = active.id as string;
+
+    if (sourceGroupId === targetGroupId) return;
+    if (!over.data.current.isDroppable) return;
+
+    try {
+      setIsMoving(true);
+      await moveMember(sourceGroupId, projectId, targetGroupId, memberId);
+      await loadGroups(projectId);
+      await useProjectStore.getState().loadProject(projectId);
+    } catch (err) {
+      console.error("Failed to move member:", err);
+      setDragError(err instanceof Error ? err.message : "拖拽移动成员失败，请重试");
+    } finally {
+      setIsMoving(false);
+    }
+  };
+
+  const handleDragCancel = () => {
+    setActiveDragItem(null);
+  };
 
   useEffect(() => {
     loadGroups(projectId);
@@ -58,7 +106,16 @@ export function GroupingStage({ projectId }: GroupingStageProps) {
   const selectedGroup = groups.find(g => g.id === selectedGroupId);
 
   return (
-    <div className="flex h-[calc(100vh-140px)] gap-6">
+    <DndContext collisionDetection={pointerWithin} onDragStart={handleDragStart} onDragEnd={handleDragEnd} onDragCancel={handleDragCancel}>
+    <div className="flex h-[calc(100vh-140px)] gap-6 relative">
+      {isMoving && (
+        <div className="absolute inset-0 bg-white/40 backdrop-blur-[1px] z-[100] flex items-center justify-center rounded-lg">
+          <div className="bg-white p-4 rounded-xl shadow-lg border border-slate-200 flex items-center gap-3">
+            <div className="h-5 w-5 border-2 border-solid border-blue-600 border-r-transparent animate-spin rounded-full"></div>
+            <span className="text-sm font-medium text-slate-700">正在移动数据...</span>
+          </div>
+        </div>
+      )}
       {/* 左侧候选列表 */}
       <div className="w-[380px] flex-none flex flex-col h-full bg-slate-50 border border-slate-200 rounded-lg shadow-sm overflow-hidden">
         <div className="flex-none p-4 border-b border-slate-200 bg-white flex justify-between items-center shadow-sm z-10">
@@ -86,13 +143,28 @@ export function GroupingStage({ projectId }: GroupingStageProps) {
                 <h2 className="text-xl font-bold text-slate-900">{selectedGroup.groupName || "未命名归组"}</h2>
                 <div className="text-sm text-slate-500 mt-1">标识键: <code className="bg-slate-100 px-1 py-0.5 rounded text-xs ml-1">{selectedGroup.normalizedKey}</code></div>
               </div>
-              <Button size="sm" variant="default" className="shadow-sm">一键确认全组</Button>
             </div>
+            {dragError && (
+              <div className="mx-6 mt-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-md text-sm flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                  {dragError}
+                </div>
+                <button onClick={() => setDragError(null)} className="text-red-400 hover:text-red-600">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                  </svg>
+                </button>
+              </div>
+            )}
             <ScrollArea className="flex-1 bg-slate-50/50 p-6">
               <Card className="overflow-hidden border-slate-200 shadow-sm bg-white">
                 <Table>
                   <TableHeader className="bg-slate-50">
                     <TableRow className="hover:bg-slate-50">
+                      <TableHead className="w-[40px] px-2"></TableHead>
                       <TableHead className="w-[180px] font-semibold">供应商</TableHead>
                       <TableHead className="font-semibold">明细名称</TableHead>
                       <TableHead className="font-semibold">规格型号</TableHead>
@@ -103,7 +175,12 @@ export function GroupingStage({ projectId }: GroupingStageProps) {
                   </TableHeader>
                   <TableBody>
                     {selectedGroup.members.map((member, idx) => (
-                      <TableRow key={member.standardizedRowId || idx}>
+                      <DraggableMemberRow 
+                        key={member.standardizedRowId || idx} 
+                        member={member} 
+                        groupId={selectedGroup.id}
+                        isDragDisabled={selectedGroup.members.length <= 1}
+                      >
                         <TableCell className="font-medium text-slate-900">{member.supplierName}</TableCell>
                         <TableCell className="text-slate-700">{member.productName}</TableCell>
                         <TableCell className="text-slate-500 text-sm">{member.specModel || "-"}</TableCell>
@@ -112,7 +189,7 @@ export function GroupingStage({ projectId }: GroupingStageProps) {
                         <TableCell className="text-right font-medium text-slate-900">
                           {member.unitPrice !== null ? `¥${member.unitPrice.toFixed(2)}` : "-"}
                         </TableCell>
-                      </TableRow>
+                      </DraggableMemberRow>
                     ))}
                   </TableBody>
                 </Table>
@@ -134,5 +211,14 @@ export function GroupingStage({ projectId }: GroupingStageProps) {
         )}
       </div>
     </div>
+    <DragOverlay zIndex={1000}>
+      {activeDragItem ? (
+        <div className="bg-white border border-blue-500 shadow-xl rounded-md p-3 w-[300px] flex flex-col gap-1 opacity-90 cursor-grabbing">
+          <div className="font-medium text-slate-800 line-clamp-1 text-sm">{activeDragItem.member.supplierName}</div>
+          <div className="text-xs text-slate-500 line-clamp-1">{activeDragItem.member.productName} - {activeDragItem.member.specModel}</div>
+        </div>
+      ) : null}
+    </DragOverlay>
+    </DndContext>
   );
 }

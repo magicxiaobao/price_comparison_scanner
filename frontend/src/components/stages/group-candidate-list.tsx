@@ -1,17 +1,15 @@
-import { Card } from "../ui/card";
 import { Badge } from "../ui/badge";
-import { Button } from "../ui/button";
 import type { CommodityGroup } from "../../types/grouping";
 import { cn } from "../../lib/utils";
+import { DroppableGroupCard } from "./group-drag-zone";
 
 interface GroupCandidateListProps {
   groups: CommodityGroup[];
   activeGroupId: string | null;
   onSelectGroup: (groupId: string) => void;
-  onConfirm?: (groupId: string) => void;
 }
 
-export function GroupCandidateList({ groups, activeGroupId, onSelectGroup, onConfirm }: GroupCandidateListProps) {
+export function GroupCandidateList({ groups, activeGroupId, onSelectGroup }: GroupCandidateListProps) {
   const highGroups = groups.filter(g => g.confidenceLevel === "high");
   const mediumGroups = groups.filter(g => g.confidenceLevel === "medium");
   const lowGroups = groups.filter(g => g.confidenceLevel === "low");
@@ -25,8 +23,9 @@ export function GroupCandidateList({ groups, activeGroupId, onSelectGroup, onCon
         </h3>
         <div className="space-y-3">
           {list.map(group => (
-            <Card 
+            <DroppableGroupCard 
               key={group.id} 
+              group={group}
               className={cn(
                 "p-4 cursor-pointer hover:border-blue-400 transition-colors",
                 activeGroupId === group.id ? "border-blue-500 bg-blue-50/50 shadow-sm" : "border-slate-200 bg-white"
@@ -54,17 +53,10 @@ export function GroupCandidateList({ groups, activeGroupId, onSelectGroup, onCon
                 <span className="text-slate-300">|</span>
                 <span>匹配度: {(group.matchScore * 100).toFixed(0)}%</span>
               </div>
-              <p className="text-xs text-slate-400 line-clamp-1 mb-3" title={group.matchReason}>
+              <p className="text-xs text-slate-400 line-clamp-1 mb-1" title={group.matchReason}>
                 {group.matchReason}
               </p>
-              {group.status === "candidate" && (
-                <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
-                  <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-blue-600 hover:text-blue-700 hover:bg-blue-100" onClick={(e) => { e.stopPropagation(); onConfirm?.(group.id); }}>
-                    一键确认
-                  </Button>
-                </div>
-              )}
-            </Card>
+            </DroppableGroupCard>
           ))}
         </div>
       </div>
