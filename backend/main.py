@@ -3,6 +3,7 @@ import argparse
 from fastapi import FastAPI
 
 from api.health import router as health_router
+from api.middleware import SessionTokenMiddleware
 from config import settings
 
 app = FastAPI(
@@ -10,11 +11,13 @@ app = FastAPI(
     version="0.1.0",
 )
 
+# 中间件注册
+app.add_middleware(SessionTokenMiddleware)
+
 # 路由注册
 app.include_router(health_router, prefix="/api")
 
 # 注意：不添加 CORSMiddleware。开发模式下通过 Vite proxy 解决跨域。
-# Session Token 中间件在 Task 0.2 中添加。
 
 if __name__ == "__main__":
     import uvicorn
