@@ -3,7 +3,9 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useProjectStore } from "../stores/project-store";
 import { ImportStage } from "../components/stages/import-stage";
 import { StandardizeStage } from "../components/stages/standardize-stage";
+import { GroupingStage } from "../components/stages/grouping-stage";
 import { StageNavigation } from "../components/workbench/stage-navigation";
+import { useGroupingStore } from "../stores/grouping-store";
 import { StageDirtyBanner } from "../components/workbench/stage-dirty-banner";
 import { ProblemPanelShell } from "../components/workbench/problem-panel-shell";
 import { EvidenceDrawerShell } from "../components/workbench/evidence-drawer-shell";
@@ -14,6 +16,7 @@ function ProjectWorkbench() {
   const navigate = useNavigate();
   const { loadProject, loadFiles, loadTables, files, tables, currentProject } =
     useProjectStore();
+  const generateGrouping = useGroupingStore(state => state.generateGrouping);
 
   const [currentStage, setCurrentStage] = useState<number | null>(null);
   const [isProblemPanelOpen, setIsProblemPanelOpen] = useState(false);
@@ -59,6 +62,7 @@ function ProjectWorkbench() {
 
   const isImportDirty = currentProject?.stage_statuses?.import_status === "dirty";
   const isNormalizeDirty = currentProject?.stage_statuses?.normalize_status === "dirty";
+  const isGroupingDirty = currentProject?.stage_statuses?.grouping_status === "dirty";
 
   return (
     <div className="flex flex-col h-screen min-w-[1280px] bg-slate-50 overflow-hidden font-sans">
@@ -109,6 +113,13 @@ function ProjectWorkbench() {
                 onRecalculate={() => {}}
               />
             )}
+            {currentStage === 2 && isGroupingDirty && (
+              <StageDirtyBanner
+                stageName="商品归组"
+                dirtyReason="由于上游数据或规则更新，部分归组关系可能受影响，建议重新生成以保障比价准确。"
+                onRecalculate={() => id && generateGrouping(id)}
+              />
+            )}
           </div>
           
           <div className="flex-1 overflow-y-auto px-6 pb-6 pt-2">
@@ -118,7 +129,10 @@ function ProjectWorkbench() {
             {currentStage === 1 && (
               <StandardizeStage files={files || []} projectId={id} />
             )}
-            {currentStage > 1 && (
+            {currentStage === 2 && (
+              <GroupingStage projectId={id} />
+            )}
+            {currentStage > 2 && (
               <div className="h-[400px] border-2 border-dashed border-slate-200 rounded-lg flex items-center justify-center text-slate-400 backdrop-blur-sm bg-white">
                 当前阶段 (ID: {currentStage}) 正在开发中...
               </div>

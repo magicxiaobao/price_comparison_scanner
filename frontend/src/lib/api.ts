@@ -1,5 +1,12 @@
 import axios from "axios";
 import type { ProjectSummary, ProjectDetail, CreateProjectRequest } from "../types/project";
+import type {
+  CommodityGroup,
+  GroupingGenerateResponse,
+  GroupConfirmResponse,
+  GroupSplitResponse,
+  GroupMergeResponse,
+} from "../types/grouping";
 import type { SupplierFile, FileUploadResponse, RawTable } from "../types/file";
 import type { TaskInfo } from "../types/task";
 import type {
@@ -219,6 +226,43 @@ export async function getColumnMappingInfo(
   const resp = await client.get<ColumnMappingInfo[]>(
     `/api/projects/${projectId}/column-mapping-info`,
   );
+  return resp.data;
+}
+
+// ---- Commodity Grouping API ----
+
+export async function generateGrouping(projectId: string): Promise<GroupingGenerateResponse> {
+  const resp = await client.post<GroupingGenerateResponse>(`/api/projects/${projectId}/grouping/generate`);
+  return resp.data;
+}
+
+export async function listGroups(projectId: string): Promise<CommodityGroup[]> {
+  const resp = await client.get<CommodityGroup[]>(`/api/projects/${projectId}/groups`);
+  return resp.data;
+}
+
+export async function confirmGroup(groupId: string, projectId: string): Promise<GroupConfirmResponse> {
+  const resp = await client.put<GroupConfirmResponse>(`/api/groups/${groupId}/confirm`, { projectId });
+  return resp.data;
+}
+
+export async function splitGroup(groupId: string, projectId: string, newGroups: string[][]): Promise<GroupSplitResponse> {
+  const resp = await client.put<GroupSplitResponse>(`/api/groups/${groupId}/split`, { projectId, newGroups });
+  return resp.data;
+}
+
+export async function mergeGroups(projectId: string, groupIds: string[]): Promise<GroupMergeResponse> {
+  const resp = await client.post<GroupMergeResponse>(`/api/projects/${projectId}/grouping/merge`, { groupIds });
+  return resp.data;
+}
+
+export async function markNotComparable(groupId: string, projectId: string): Promise<{ id: string; status: string }> {
+  const resp = await client.put<{ id: string; status: string }>(`/api/groups/${groupId}/not-comparable`, { projectId });
+  return resp.data;
+}
+
+export async function moveMember(groupId: string, projectId: string, targetGroupId: string, rowId: string): Promise<Record<string, unknown>> {
+  const resp = await client.put<Record<string, unknown>>(`/api/groups/${groupId}/move-member`, { projectId, targetGroupId, rowId });
   return resp.data;
 }
 
