@@ -152,8 +152,65 @@ class DocumentParser:
     def _parse_pdf(
         self, file_path: str, progress_callback: Callable[[float], None] | None = None
     ) -> list[RawTableData]:
-        """PDF 解析器占位 — Task 1.4 实现"""
-        raise NotImplementedError("PDF 解析器尚未实现")
+        """
+        使用 pdfplumber 进行 L1 结构化提取。
+        逐页提取表格，每个表格生成一个 RawTableData，记录 page_number。
+        跳过完全空白的表格。
+        """
+        import pdfplumber
+
+        results: list[RawTableData] = []
+
+        with pdfplumber.open(file_path) as pdf:
+            total_pages = len(pdf.pages)
+
+            for page_idx, page in enumerate(pdf.pages):
+                tables = page.extract_tables()
+                if not tables:
+                    if progress_callback:
+                        progress_callback((page_idx + 1) / max(total_pages, 1))
+                    continue
+
+                for table in tables:
+                    if not table or len(table) == 0:
+                        continue
+
+                    # 清洗单元格值
+                    cleaned_rows: list[list[str | None]] = []
+                    for row in table:
+                        cleaned = [
+                            cell.strip() if cell and cell.strip() else None
+                            for cell in row
+                        ]
+                        cleaned_rows.append(cleaned)
+
+                    # 跳过完全空白的表格
+                    has_data = any(
+                        any(v is not None for v in row)
+                        for row in cleaned_rows
+                    )
+                    if not has_data:
+                        continue
+
+                    # 第一行作为表头
+                    headers = [v or "" for v in cleaned_rows[0]] if cleaned_rows else []
+                    data_rows = cleaned_rows[1:] if len(cleaned_rows) > 1 else []
+
+                    table_data = RawTableData(
+                        table_index=len(results),
+                        headers=headers,
+                        rows=data_rows,
+                        sheet_name=None,
+                        page_number=page_idx + 1,  # 页码从 1 开始
+                        row_count=len(data_rows),
+                        column_count=len(headers),
+                    )
+                    results.append(table_data)
+
+                if progress_callback:
+                    progress_callback((page_idx + 1) / max(total_pages, 1))
+
+        return results
 
     @staticmethod
     def _is_ocr_available() -> bool:

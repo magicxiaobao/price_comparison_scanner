@@ -206,3 +206,79 @@ def test_parse_docx_progress(parser, sample_docx):
     parser.parse(str(sample_docx), progress_callback=lambda p: progress_values.append(p))
     assert len(progress_values) > 0
     assert progress_values[-1] <= 1.0
+
+
+# ── PDF 测试 ──
+
+
+@pytest.fixture
+def sample_pdf(tmp_path) -> Path:
+    """生成一个包含表格的简单 PDF"""
+    from fpdf import FPDF
+
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Helvetica", size=10)
+
+    headers = ["Product", "Price", "Qty"]
+    rows = [
+        ["Laptop", "4299", "50"],
+        ["Monitor", "1599", "30"],
+    ]
+
+    col_width = 40
+    row_height = 8
+
+    for header in headers:
+        pdf.cell(col_width, row_height, header, border=1)
+    pdf.ln()
+
+    for row in rows:
+        for cell in row:
+            pdf.cell(col_width, row_height, cell, border=1)
+        pdf.ln()
+
+    path = tmp_path / "test.pdf"
+    pdf.output(str(path))
+    return path
+
+
+@pytest.fixture
+def empty_pdf(tmp_path) -> Path:
+    """生成一个无表格的 PDF（纯文本）"""
+    from fpdf import FPDF
+
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Helvetica", size=12)
+    pdf.cell(0, 10, "This PDF has no tables")
+
+    path = tmp_path / "empty.pdf"
+    pdf.output(str(path))
+    return path
+
+
+def test_parse_pdf_basic(parser, sample_pdf):
+    """解析含表格的 PDF → 返回至少 1 个表格"""
+    results = parser.parse(str(sample_pdf))
+    assert isinstance(results, list)
+    if len(results) > 0:
+        t = results[0]
+        assert t.page_number == 1
+        assert t.row_count >= 1
+        assert t.column_count >= 1
+        assert t.sheet_name is None
+
+
+def test_parse_pdf_empty(parser, empty_pdf):
+    """无表格的 PDF → 返回空列表"""
+    results = parser.parse(str(empty_pdf))
+    assert results == []
+
+
+def test_parse_pdf_progress(parser, sample_pdf):
+    """进度回调被正确调用"""
+    progress_values: list[float] = []
+    parser.parse(str(sample_pdf), progress_callback=lambda p: progress_values.append(p))
+    assert len(progress_values) > 0
+    assert progress_values[-1] <= 1.0
