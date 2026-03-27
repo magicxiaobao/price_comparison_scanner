@@ -9,6 +9,11 @@ import type {
   RuleTestResult,
   RuleImportSummary,
 } from "../types/rule";
+import type {
+  StandardizedRow,
+  ColumnMappingInfo,
+  FieldModifyResponse,
+} from "../types/standardization";
 
 /**
  * API 客户端。
@@ -171,6 +176,49 @@ export async function testRule(columnName: string, projectId?: string): Promise<
     columnName,
     projectId: projectId ?? null,
   });
+  return resp.data;
+}
+
+// ---- 标准化 API ----
+
+export async function runStandardization(
+  projectId: string,
+  force?: boolean,
+): Promise<{ taskId: string }> {
+  const resp = await client.post<{ taskId: string }>(
+    `/api/projects/${projectId}/standardize`,
+    force ? { force } : null,
+  );
+  return resp.data;
+}
+
+export async function getStandardizedRows(
+  projectId: string,
+): Promise<StandardizedRow[]> {
+  const resp = await client.get<StandardizedRow[]>(
+    `/api/projects/${projectId}/standardized-rows`,
+  );
+  return resp.data;
+}
+
+export async function modifyStandardizedRow(
+  rowId: string,
+  field: string,
+  newValue: string | number | null,
+): Promise<FieldModifyResponse> {
+  const resp = await client.put<FieldModifyResponse>(
+    `/api/standardized-rows/${rowId}`,
+    { field, newValue },
+  );
+  return resp.data;
+}
+
+export async function getColumnMappingInfo(
+  projectId: string,
+): Promise<ColumnMappingInfo[]> {
+  const resp = await client.get<ColumnMappingInfo[]>(
+    `/api/projects/${projectId}/column-mapping-info`,
+  );
   return resp.data;
 }
 
