@@ -37,6 +37,16 @@
 
 ---
 
+## 4. Phase 2 新增遗留项
+
+| ID | 描述 | 影响 | 建议时机 |
+|----|------|------|----------|
+| **P2-C1** | `models/rule.py` 和 `models/standardization.py` 的 alias/schema generation 链路产生 36 条 `UnsupportedFieldAttributeWarning` | pytest 功能通过但输出不 clean，掩盖其他潜在 warning | Phase 3 前清理 |
+| **P2-C2** | openapi.json 中部分规则端点（GET /api/rules 等）返回 schema 为 generic object，非强类型 | 契约可用但未严格定义，前端对接靠约定而非 schema 强校验 | 后续按需补 response_model |
+| **P2-C3** | FieldModifyResponse.auditLog 子字段前后端定义不一致（前端 beforeValue vs 后端 before_value） | 当前前端不渲染 auditLog 内部字段，无功能影响 | 后续展示审计详情时对齐 |
+
+---
+
 ## 来源追溯
 
 | ID | 审查轮次 | 原始发现者 |
