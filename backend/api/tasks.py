@@ -1,11 +1,12 @@
 from fastapi import APIRouter, HTTPException
 
 from engines.task_manager import get_task_manager
+from models.task import TaskStatusResponse
 
 router = APIRouter(tags=["异步任务"])
 
 
-@router.get("/tasks/{task_id}/status")
+@router.get("/tasks/{task_id}/status", response_model=TaskStatusResponse)
 async def get_task_status(task_id: str):
     tm = get_task_manager()
     info = tm.get_status(task_id)

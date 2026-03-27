@@ -70,3 +70,23 @@ def test_list_by_project(table_repo: TableRepo, setup_file: None) -> None:
     result = table_repo.list_by_project("p1")
     assert len(result) == 1
     assert result[0]["supplier_name"] == "供应商A"
+
+
+def test_raw_data_deserialized_as_dict(table_repo: TableRepo, setup_file: None) -> None:
+    """B3: raw_data 读出后应为 dict，不是 JSON 字符串"""
+    raw = {"headers": ["品名", "单价"], "rows": [["笔", "5"]]}
+    table_repo.insert("t1", "f1", 0, "Sheet1", None, 1, 2, raw)
+
+    # get_by_id
+    row = table_repo.get_by_id("t1")
+    assert row is not None
+    assert isinstance(row["raw_data"], dict)
+    assert row["raw_data"] == raw
+
+    # list_by_file
+    rows = table_repo.list_by_file("f1")
+    assert isinstance(rows[0]["raw_data"], dict)
+
+    # list_by_project
+    rows = table_repo.list_by_project("p1")
+    assert isinstance(rows[0]["raw_data"], dict)
