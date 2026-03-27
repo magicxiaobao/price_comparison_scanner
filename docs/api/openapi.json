@@ -1093,6 +1093,361 @@
           }
         }
       }
+    },
+    "/api/projects/{project_id}/grouping/generate": {
+      "post": {
+        "tags": [
+          "商品归组"
+        ],
+        "summary": "Generate Grouping",
+        "description": "生成归组候选（异步任务）",
+        "operationId": "generate_grouping_api_projects__project_id__grouping_generate_post",
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Project Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupingGenerateResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/projects/{project_id}/groups": {
+      "get": {
+        "tags": [
+          "商品归组"
+        ],
+        "summary": "List Groups",
+        "description": "获取项目所有归组",
+        "operationId": "list_groups_api_projects__project_id__groups_get",
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Project Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CommodityGroupResponse"
+                  },
+                  "title": "Response List Groups Api Projects  Project Id  Groups Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/groups/{group_id}/confirm": {
+      "put": {
+        "tags": [
+          "商品归组"
+        ],
+        "summary": "Confirm Group",
+        "description": "确认归组",
+        "operationId": "confirm_group_api_groups__group_id__confirm_put",
+        "parameters": [
+          {
+            "name": "group_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Group Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GroupActionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupConfirmResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/groups/{group_id}/split": {
+      "put": {
+        "tags": [
+          "商品归组"
+        ],
+        "summary": "Split Group",
+        "description": "拆分归组。请求体含 project_id + new_groups",
+        "operationId": "split_group_api_groups__group_id__split_put",
+        "parameters": [
+          {
+            "name": "group_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Group Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GroupSplitRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupSplitResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/projects/{project_id}/grouping/merge": {
+      "post": {
+        "tags": [
+          "商品归组"
+        ],
+        "summary": "Merge Groups",
+        "description": "手工合并归组",
+        "operationId": "merge_groups_api_projects__project_id__grouping_merge_post",
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Project Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GroupMergeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupMergeResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/groups/{group_id}/not-comparable": {
+      "put": {
+        "tags": [
+          "商品归组"
+        ],
+        "summary": "Mark Not Comparable",
+        "description": "标记归组为不可比",
+        "operationId": "mark_not_comparable_api_groups__group_id__not_comparable_put",
+        "parameters": [
+          {
+            "name": "group_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Group Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GroupActionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupMarkNotComparableResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/groups/{group_id}/move-member": {
+      "put": {
+        "tags": [
+          "商品归组"
+        ],
+        "summary": "Move Member",
+        "description": "将成员从当前归组移动到目标归组（原子操作）",
+        "operationId": "move_member_api_groups__group_id__move_member_put",
+        "parameters": [
+          {
+            "name": "group_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Group Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GroupMoveMemberRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupMoveMemberResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1124,6 +1479,78 @@
           "file"
         ],
         "title": "Body_upload_file_api_projects__project_id__files_post"
+      },
+      "CommodityGroupResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "projectId": {
+            "type": "string",
+            "title": "Projectid"
+          },
+          "groupName": {
+            "type": "string",
+            "title": "Groupname"
+          },
+          "normalizedKey": {
+            "type": "string",
+            "title": "Normalizedkey"
+          },
+          "confidenceLevel": {
+            "type": "string",
+            "title": "Confidencelevel"
+          },
+          "matchScore": {
+            "type": "number",
+            "title": "Matchscore"
+          },
+          "matchReason": {
+            "type": "string",
+            "title": "Matchreason"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "confirmedAt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confirmedat"
+          },
+          "members": {
+            "items": {
+              "$ref": "#/components/schemas/GroupMemberSummary"
+            },
+            "type": "array",
+            "title": "Members"
+          },
+          "memberCount": {
+            "type": "integer",
+            "title": "Membercount",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "projectId",
+          "groupName",
+          "normalizedKey",
+          "confidenceLevel",
+          "matchScore",
+          "matchReason",
+          "status"
+        ],
+        "title": "CommodityGroupResponse",
+        "description": "归组响应 — GET /api/projects/{project_id}/groups 的列表项"
       },
       "FieldModifyRequest": {
         "properties": {
@@ -1205,6 +1632,273 @@
         ],
         "title": "FileUploadResponse",
         "description": "文件上传响应"
+      },
+      "GroupActionRequest": {
+        "properties": {
+          "projectId": {
+            "type": "string",
+            "title": "Projectid"
+          }
+        },
+        "type": "object",
+        "required": [
+          "projectId"
+        ],
+        "title": "GroupActionRequest",
+        "description": "归组操作通用请求（confirm / not-comparable 等需要 project_id 的操作）"
+      },
+      "GroupConfirmResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "confirmedAt": {
+            "type": "string",
+            "title": "Confirmedat"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "status",
+          "confirmedAt"
+        ],
+        "title": "GroupConfirmResponse",
+        "description": "确认归组响应"
+      },
+      "GroupMarkNotComparableResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "status"
+        ],
+        "title": "GroupMarkNotComparableResponse",
+        "description": "标记不可比响应"
+      },
+      "GroupMemberSummary": {
+        "properties": {
+          "standardizedRowId": {
+            "type": "string",
+            "title": "Standardizedrowid"
+          },
+          "supplierName": {
+            "type": "string",
+            "title": "Suppliername"
+          },
+          "productName": {
+            "type": "string",
+            "title": "Productname"
+          },
+          "specModel": {
+            "type": "string",
+            "title": "Specmodel",
+            "default": ""
+          },
+          "unit": {
+            "type": "string",
+            "title": "Unit",
+            "default": ""
+          },
+          "unitPrice": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unitprice"
+          },
+          "quantity": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quantity"
+          },
+          "confidence": {
+            "type": "number",
+            "title": "Confidence",
+            "default": 1.0
+          }
+        },
+        "type": "object",
+        "required": [
+          "standardizedRowId",
+          "supplierName",
+          "productName"
+        ],
+        "title": "GroupMemberSummary",
+        "description": "归组成员摘要 — 展示在归组列表中的行信息"
+      },
+      "GroupMergeRequest": {
+        "properties": {
+          "groupIds": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "minItems": 2,
+            "title": "Groupids",
+            "description": "要合并的归组 ID 列表，至少 2 个"
+          }
+        },
+        "type": "object",
+        "required": [
+          "groupIds"
+        ],
+        "title": "GroupMergeRequest",
+        "description": "合并归组请求 — POST /api/projects/{project_id}/grouping/merge"
+      },
+      "GroupMergeResponse": {
+        "properties": {
+          "mergedGroup": {
+            "$ref": "#/components/schemas/CommodityGroupResponse"
+          },
+          "removedGroupIds": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Removedgroupids"
+          }
+        },
+        "type": "object",
+        "required": [
+          "mergedGroup",
+          "removedGroupIds"
+        ],
+        "title": "GroupMergeResponse",
+        "description": "合并归组响应"
+      },
+      "GroupMoveMemberRequest": {
+        "properties": {
+          "projectId": {
+            "type": "string",
+            "title": "Projectid"
+          },
+          "targetGroupId": {
+            "type": "string",
+            "title": "Targetgroupid"
+          },
+          "rowId": {
+            "type": "string",
+            "title": "Rowid"
+          }
+        },
+        "type": "object",
+        "required": [
+          "projectId",
+          "targetGroupId",
+          "rowId"
+        ],
+        "title": "GroupMoveMemberRequest",
+        "description": "成员移动请求"
+      },
+      "GroupMoveMemberResponse": {
+        "properties": {
+          "sourceGroup": {
+            "$ref": "#/components/schemas/CommodityGroupResponse"
+          },
+          "targetGroup": {
+            "$ref": "#/components/schemas/CommodityGroupResponse"
+          },
+          "movedRowId": {
+            "type": "string",
+            "title": "Movedrowid"
+          }
+        },
+        "type": "object",
+        "required": [
+          "sourceGroup",
+          "targetGroup",
+          "movedRowId"
+        ],
+        "title": "GroupMoveMemberResponse",
+        "description": "成员移动响应"
+      },
+      "GroupSplitRequest": {
+        "properties": {
+          "projectId": {
+            "type": "string",
+            "title": "Projectid"
+          },
+          "newGroups": {
+            "items": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "type": "array",
+            "minItems": 2,
+            "title": "Newgroups",
+            "description": "拆分后的新组，每组为 standardized_row_id 列表，至少拆为 2 组"
+          }
+        },
+        "type": "object",
+        "required": [
+          "projectId",
+          "newGroups"
+        ],
+        "title": "GroupSplitRequest",
+        "description": "拆分归组请求 — PUT /api/groups/{group_id}/split"
+      },
+      "GroupSplitResponse": {
+        "properties": {
+          "originalGroupId": {
+            "type": "string",
+            "title": "Originalgroupid"
+          },
+          "newGroups": {
+            "items": {
+              "$ref": "#/components/schemas/CommodityGroupResponse"
+            },
+            "type": "array",
+            "title": "Newgroups"
+          }
+        },
+        "type": "object",
+        "required": [
+          "originalGroupId",
+          "newGroups"
+        ],
+        "title": "GroupSplitResponse",
+        "description": "拆分归组响应"
+      },
+      "GroupingGenerateResponse": {
+        "properties": {
+          "taskId": {
+            "type": "string",
+            "title": "Taskid"
+          }
+        },
+        "type": "object",
+        "required": [
+          "taskId"
+        ],
+        "title": "GroupingGenerateResponse",
+        "description": "生成归组候选的异步任务响应"
       },
       "HTTPValidationError": {
         "properties": {
