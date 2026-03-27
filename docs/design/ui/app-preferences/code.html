@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>应用偏好设置 - 三方比价支出依据扫描工具</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#2563eb",
+                        "background": "#f3f4f6",
+                        "border-light": "#e5e7eb",
+                        "text-main": "#1f2937",
+                        "text-secondary": "#6b7280",
+                    },
+                    fontFamily: {
+                        "sans": ["Inter", "Microsoft YaHei", "sans-serif"]
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            display: inline-block;
+            line-height: 1;
+            font-size: 20px;
+        }
+        body {
+            font-family: "Inter", sans-serif;
+            background-color: #f3f4f6;
+            color: #1f2937;
+        }
+        .sidebar-item-active {
+            background-color: #eff6ff;
+            color: #2563eb;
+            font-weight: 600;
+            border-left: 3px solid #2563eb;
+        }
+        .custom-switch {
+            position: relative;
+            display: inline-block;
+            width: 36px;
+            height: 20px;
+        }
+        .custom-switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #d1d5db;
+            transition: .2s;
+            border-radius: 20px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 2px;
+            bottom: 2px;
+            background-color: white;
+            transition: .2s;
+            border-radius: 50%;
+        }
+        input:checked + .slider { background-color: #2563eb; }
+        input:checked + .slider:before { transform: translateX(16px); }
+
+        .settings-card {
+            background-color: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.75rem;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        }
+        
+        input[type="text"], input[type="number"], select {
+            border: 1px solid #d1d5db;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+        }
+        input[type="text"]:focus, input[type="number"]:focus, select:focus {
+            border-color: #2563eb;
+            ring-color: #2563eb;
+        }
+    </style>
+</head>
+<body class="h-screen flex flex-col overflow-hidden">
+<!-- Header -->
+<header class="h-14 flex items-center justify-between px-6 bg-white border-b border-border-light flex-shrink-0 z-20">
+<div class="flex items-center gap-4">
+<button class="text-text-secondary hover:text-text-main transition-colors">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<div class="h-4 w-[1px] bg-slate-200"></div>
+<h2 class="text-sm font-bold text-text-main">应用偏好设置</h2>
+</div>
+<div class="flex gap-2">
+<button class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-xs font-semibold transition-colors">
+                恢复默认
+            </button>
+<button class="px-3 py-1.5 bg-primary hover:bg-blue-700 text-white rounded text-xs font-semibold shadow-sm transition-colors">
+                保存更改
+            </button>
+</div>
+</header>
+<!-- Main Container -->
+<div class="flex-1 flex overflow-hidden">
+<!-- Sidebar Navigation -->
+<aside class="w-64 bg-white border-r border-border-light flex flex-col py-4 flex-shrink-0">
+<div class="sidebar-item-active flex items-center gap-3 px-4 py-2.5 cursor-pointer">
+<span class="material-symbols-outlined text-[18px]">settings</span>
+<span class="text-sm">常规 (General)</span>
+</div>
+<div class="flex items-center gap-3 px-4 py-2.5 text-text-secondary hover:bg-slate-50 cursor-pointer border-l-3 border-transparent">
+<span class="material-symbols-outlined text-[18px]">database</span>
+<span class="text-sm">存储与自动保存</span>
+</div>
+<div class="flex items-center gap-3 px-4 py-2.5 text-text-secondary hover:bg-slate-50 cursor-pointer border-l-3 border-transparent">
+<span class="material-symbols-outlined text-[18px]">export_notes</span>
+<span class="text-sm">导出设置</span>
+</div>
+<div class="flex items-center gap-3 px-4 py-2.5 text-text-secondary hover:bg-slate-50 cursor-pointer border-l-3 border-transparent">
+<span class="material-symbols-outlined text-[18px]">science</span>
+<span class="text-sm">实验功能</span>
+</div>
+<div class="flex items-center gap-3 px-4 py-2.5 text-text-secondary hover:bg-slate-50 cursor-pointer border-l-3 border-transparent">
+<span class="material-symbols-outlined text-[18px]">history_edu</span>
+<span class="text-sm">日志与诊断</span>
+</div>
+<div class="flex items-center gap-3 px-4 py-2.5 text-text-secondary hover:bg-slate-50 cursor-pointer border-l-3 border-transparent">
+<span class="material-symbols-outlined text-[18px]">info</span>
+<span class="text-sm">关于</span>
+</div>
+</aside>
+<!-- Content Area -->
+<main class="flex-1 overflow-y-auto bg-background px-8 py-8 scroll-smooth">
+<div class="max-w-4xl mx-auto space-y-6 pb-24">
+<!-- General Settings Section -->
+<section class="settings-card p-6" id="general">
+<h3 class="text-text-main text-base font-bold mb-6 flex items-center gap-2">
+                        常规设置 (General)
+                    </h3>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+<div class="space-y-1.5">
+<label class="text-text-secondary text-xs font-semibold uppercase tracking-wider">默认启动页</label>
+<select class="w-full h-9 px-3 text-sm focus:ring-1 focus:ring-primary">
+<option>首页</option>
+<option>最近项目列表</option>
+<option>规则管理</option>
+</select>
+</div>
+<div class="space-y-1.5">
+<label class="text-text-secondary text-xs font-semibold uppercase tracking-wider">显示最近项目数量</label>
+<input class="w-full h-9 px-3 text-sm focus:ring-1 focus:ring-primary" type="number" value="10"/>
+</div>
+<div class="flex items-center justify-between py-1 col-span-1">
+<div>
+<p class="text-text-main text-sm font-medium">启动时恢复上次会话</p>
+<p class="text-text-secondary text-xs mt-0.5">自动打开上次未关闭的审计工作台</p>
+</div>
+<label class="custom-switch">
+<input checked="" type="checkbox"/>
+<span class="slider"></span>
+</label>
+</div>
+<div class="flex items-center justify-between py-1 col-span-1">
+<div>
+<p class="text-text-main text-sm font-medium">自动检查更新</p>
+<p class="text-text-secondary text-xs mt-0.5">在应用启动时检索最新稳定版本</p>
+</div>
+<label class="custom-switch">
+<input checked="" type="checkbox"/>
+<span class="slider"></span>
+</label>
+</div>
+</div>
+</section>
+<!-- Storage Settings Section -->
+<section class="settings-card p-6" id="storage">
+<h3 class="text-text-main text-base font-bold mb-6">存储与自动保存</h3>
+<div class="space-y-6">
+<div class="space-y-1.5">
+<label class="text-text-secondary text-xs font-semibold uppercase tracking-wider">默认项目存储目录</label>
+<div class="flex gap-2">
+<input class="flex-1 h-9 px-3 bg-slate-50 border-slate-200 text-text-main text-sm" readonly="" type="text" value="C:\Users\Admin\Documents\AuditProjects"/>
+<button class="px-4 bg-white border border-slate-300 text-slate-700 text-sm font-medium rounded-md hover:bg-slate-50">选择</button>
+<button class="px-3 bg-white border border-slate-300 text-slate-700 rounded-md hover:bg-slate-50 flex items-center">
+<span class="material-symbols-outlined text-[18px]">folder_open</span>
+</button>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-8 items-center">
+<div class="flex items-center justify-between">
+<div>
+<p class="text-text-main text-sm font-medium">启用自动保存</p>
+</div>
+<label class="custom-switch">
+<input checked="" type="checkbox"/>
+<span class="slider"></span>
+</label>
+</div>
+<div class="flex items-center gap-4">
+<span class="text-text-secondary text-xs font-semibold uppercase tracking-wider whitespace-nowrap">频率 (分钟)</span>
+<input class="w-20 h-9 px-3 text-sm text-center" type="number" value="5"/>
+</div>
+</div>
+<div class="space-y-1.5">
+<label class="text-text-secondary text-xs font-semibold uppercase tracking-wider">本地数据库路径 (SQLite)</label>
+<div class="flex gap-2">
+<input class="flex-1 h-9 px-3 bg-slate-50 border-slate-200 text-text-main text-sm" readonly="" type="text" value="C:\ProgramData\AuditTool\local.db"/>
+<button class="px-4 bg-white border border-slate-300 text-slate-700 text-sm font-medium rounded-md hover:bg-slate-50">重定向</button>
+</div>
+</div>
+</div>
+</section>
+<!-- Export Settings Section -->
+<section class="settings-card p-6" id="export">
+<h3 class="text-text-main text-base font-bold mb-6">导出设置 (Export)</h3>
+<div class="space-y-4">
+<div class="space-y-1.5">
+<label class="text-text-secondary text-xs font-semibold uppercase tracking-wider">文件名生成规则</label>
+<input class="w-full h-9 px-3 text-sm focus:ring-1 focus:ring-primary font-mono" type="text" value="{ProjectName}_{Date}_{Auditor}"/>
+<p class="text-text-secondary text-[11px]">可用变量: {ProjectName}, {Date}, {Time}, {Auditor}, {Code}</p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-y-3 gap-x-6 pt-2">
+<label class="flex items-center gap-3 cursor-pointer">
+<input checked="" class="rounded border-slate-300 text-primary focus:ring-0" type="checkbox"/>
+<span class="text-text-main text-sm">包含溯源清单 (Traceability Sheet)</span>
+</label>
+<label class="flex items-center gap-3 cursor-pointer">
+<input checked="" class="rounded border-slate-300 text-primary focus:ring-0" type="checkbox"/>
+<span class="text-text-main text-sm">生成合规矩阵 (Compliance Matrix)</span>
+</label>
+<label class="flex items-center gap-3 cursor-pointer">
+<input checked="" class="rounded border-slate-300 text-primary focus:ring-0" type="checkbox"/>
+<span class="text-text-main text-sm">自动提取异常项说明 (Exception Sheet)</span>
+</label>
+</div>
+</div>
+</section>
+<!-- Experimental Features Section -->
+<section class="settings-card p-6" id="experimental">
+<div class="flex items-center gap-2 mb-6">
+<h3 class="text-text-main text-base font-bold">实验性功能</h3>
+<span class="bg-blue-100 text-primary text-[10px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">Beta</span>
+</div>
+<div class="space-y-6">
+<div class="flex items-center justify-between">
+<div>
+<p class="text-text-main text-sm font-medium">增强型 OCR 引擎</p>
+<p class="text-text-secondary text-xs mt-0.5">使用深度学习模型提升手写单据识别精度</p>
+</div>
+<label class="custom-switch">
+<input checked="" type="checkbox"/>
+<span class="slider"></span>
+</label>
+</div>
+<div class="space-y-3">
+<div class="flex justify-between items-center">
+<label class="text-text-main text-xs font-semibold uppercase tracking-wider">置信度阈值 (Confidence Threshold)</label>
+<span class="text-primary font-bold text-sm">85%</span>
+</div>
+<input class="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-primary" max="100" min="0" type="range" value="85"/>
+<p class="text-text-secondary text-[11px] italic">低于此阈值的识别结果将强制人工复核</p>
+</div>
+<div class="p-4 bg-amber-50 rounded-lg border border-amber-200 flex gap-3">
+<span class="material-symbols-outlined text-amber-500 text-[20px]">warning</span>
+<p class="text-[11px] text-amber-800 leading-relaxed">
+                                实验性功能可能存在不稳定性或数据偏差，不建议在正式审计报告中作为唯一依据。使用前请确保已有数据备份。
+                            </p>
+</div>
+</div>
+</section>
+<!-- Logging Section -->
+<section class="settings-card p-6" id="logging">
+<h3 class="text-text-main text-base font-bold mb-6">日志与诊断</h3>
+<div class="space-y-6">
+<div class="flex items-center justify-between">
+<div>
+<p class="text-text-main text-sm font-medium">启用详细调试日志 (Debug Log)</p>
+</div>
+<label class="custom-switch">
+<input type="checkbox"/>
+<span class="slider"></span>
+</label>
+</div>
+<div class="space-y-1.5">
+<label class="text-text-secondary text-xs font-semibold uppercase tracking-wider">当前日志存放位置</label>
+<div class="flex gap-2">
+<input class="flex-1 h-9 px-3 bg-slate-50 border-slate-200 text-text-main text-sm" readonly="" type="text" value="C:\Users\Admin\AppData\Local\AuditTool\Logs"/>
+<button class="px-4 bg-white border border-slate-300 text-slate-700 text-sm font-medium rounded-md hover:bg-slate-50">打开目录</button>
+</div>
+</div>
+<div class="flex gap-3 pt-2">
+<button class="flex-1 h-9 rounded-md border border-red-200 text-red-600 text-xs font-bold hover:bg-red-50 transition-colors">
+                                清理本地缓存
+                            </button>
+<button class="flex-1 h-9 rounded-md bg-slate-100 text-slate-700 text-xs font-bold hover:bg-slate-200 transition-colors">
+                                导出诊断信息包
+                            </button>
+</div>
+<!-- Confirmation Prototype -->
+<div class="p-4 bg-slate-50 border border-border-light rounded-lg mt-4">
+<div class="flex items-start gap-3">
+<span class="material-symbols-outlined text-text-secondary text-[20px]">help</span>
+<div class="flex-1">
+<p class="text-text-main text-sm font-bold">确定要清理缓存吗？</p>
+<p class="text-text-secondary text-xs mt-1">此操作将删除所有OCR缓存及临时分析文件，不会影响已保存的项目，但会导致后续加载变慢。</p>
+<div class="flex gap-3 mt-3">
+<button class="text-[11px] font-bold text-red-600 bg-red-50 border border-red-100 px-3 py-1.5 rounded">确认清理</button>
+<button class="text-[11px] font-bold text-slate-500 px-3 py-1.5 hover:text-slate-700">取消</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- About Section -->
+<section class="settings-card p-6" id="about">
+<h3 class="text-text-main text-base font-bold mb-6">关于 (About)</h3>
+<div class="flex items-start gap-6">
+<div class="size-16 bg-primary rounded-xl flex items-center justify-center text-white shrink-0 shadow-sm shadow-primary/20">
+<svg class="size-10" fill="none" viewbox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+<path d="M13.8261 30.5736C16.7203 29.8826 20.2244 29.4783 24 29.4783C27.7756 29.4783 31.2797 29.8826 34.1739 30.5736C36.9144 31.2278 39.9967 32.7669 41.3563 33.8352L24.8486 7.36089C24.4571 6.73303 23.5429 6.73303 23.1514 7.36089L6.64374 33.8352C8.00331 32.7669 11.0856 31.2278 13.8261 30.5736Z" fill="currentColor"></path>
+<path clip-rule="evenodd" d="M39.998 35.764C39.9944 35.7463 39.9875 35.7155 39.9748 35.6706C39.9436 35.5601 39.8949 35.4259 39.8346 35.2825C39.8168 35.2403 39.7989 35.1993 39.7813 35.1602C38.5103 34.2887 35.9788 33.0607 33.7095 32.5189C30.9875 31.8691 27.6413 31.4783 24 31.4783C20.3587 31.4783 17.0125 31.8691 14.2905 32.5189C12.0012 33.0654 9.44505 34.3104 8.18538 35.1832C8.17384 35.2075 8.16216 35.233 8.15052 35.2592C8.09919 35.3751 8.05721 35.4886 8.02977 35.589C8.00356 35.6848 8.00039 35.7333 8.00004 35.7388C8.00004 35.739 8 35.7393 8.00004 35.7388C8.00004 35.7641 8.0104 36.0767 8.68485 36.6314C9.34546 37.1746 10.4222 37.7531 11.9291 38.2772C14.9242 39.319 19.1919 40 24 40C28.8081 40 33.0758 39.319 36.0709 38.2772C37.5778 37.7531 38.6545 37.1746 39.3151 36.6314C39.9006 36.1499 39.9857 35.8511 39.998 35.764ZM4.95178 32.7688L21.4543 6.30267C22.6288 4.4191 25.3712 4.41909 26.5457 6.30267L43.0534 32.777C43.0709 32.8052 43.0878 32.8338 43.104 32.8629L41.3563 33.8352C43.104 32.8629 43.1038 32.8626 43.104 32.8629L43.1051 32.865L43.1065 32.8675L43.1101 32.8739L43.1199 32.8918C43.1276 32.906 43.1377 32.9246 43.1497 32.9473C43.1738 32.9925 43.2062 33.0545 43.244 33.1299C43.319 33.2792 43.4196 33.489 43.5217 33.7317C43.6901 34.1321 44 34.9311 44 35.7391C44 37.4427 43.003 38.7775 41.8558 39.7209C40.6947 40.6757 39.1354 41.4464 37.385 42.0552C33.8654 43.2794 29.133 44 24 44C18.867 44 14.1346 43.2794 10.615 42.0552C8.86463 41.4464 7.30529 40.6757 6.14419 39.7209C4.99695 38.7775 3.99999 37.4427 3.99999 35.7391C3.99999 34.8725 4.29264 34.0922 4.49321 33.6393C4.60375 33.3898 4.71348 33.1804 4.79687 33.0311C4.83898 32.9556 4.87547 32.8935 4.9035 32.8471C4.91754 32.8238 4.92954 32.8043 4.93916 32.7889L4.94662 32.777L4.95178 32.7688ZM35.9868 29.004L24 9.77997L12.0131 29.004C12.4661 28.8609 12.9179 28.7342 13.3617 28.6282C16.4281 27.8961 20.0901 27.4783 24 27.4783C27.9099 27.4783 31.5719 27.8961 34.6383 28.6282C35.082 28.7342 35.5339 28.8609 35.9868 29.004Z" fill="currentColor" fill-rule="evenodd"></path>
+</svg>
+</div>
+<div class="flex-1 space-y-4">
+<div>
+<h4 class="text-text-main text-base font-bold">三方比价支出依据扫描工具</h4>
+<p class="text-text-secondary text-xs">本地运行版 | MVP v1.3</p>
+</div>
+<div class="space-y-1.5">
+<p class="text-text-main text-xs font-semibold uppercase tracking-wider">数据隐私说明</p>
+<div class="bg-slate-50 p-3 rounded-lg border border-border-light">
+<p class="text-text-secondary text-[11px] leading-relaxed">
+                                        本工具采用完全本地化的数据处理模式。所有审计数据、识别影像及分析日志均仅存储在您的物理设备中。除非您手动触发导出，否则任何数据都不会上传至云端。
+                                    </p>
+</div>
+</div>
+<div class="flex gap-4">
+<a class="text-primary text-[11px] font-bold underline decoration-primary/30 underline-offset-4 hover:decoration-primary" href="#">最终用户许可协议 (EULA)</a>
+<a class="text-primary text-[11px] font-bold underline decoration-primary/30 underline-offset-4 hover:decoration-primary" href="#">开源组件列表</a>
+<a class="text-primary text-[11px] font-bold underline decoration-primary/30 underline-offset-4 hover:decoration-primary" href="#">检查新版本</a>
+</div>
+</div>
+</div>
+</section>
+</div>
+</main>
+</div>
+<!-- Global Action Bar (Footer) -->
+<div class="fixed bottom-0 left-0 right-0 bg-white border-t border-border-light py-4 px-8 z-30 shadow-[0_-1px_3px_0_rgba(0,0,0,0.05)]">
+<div class="max-w-4xl mx-auto flex justify-end gap-3">
+<button class="px-6 h-10 rounded-md text-slate-700 font-semibold text-sm bg-white border border-slate-300 hover:bg-slate-50 transition-colors">取消</button>
+<button class="px-6 h-10 rounded-md text-white font-semibold text-sm bg-primary hover:bg-blue-700 shadow-sm shadow-primary/20 transition-colors">应用并保存</button>
+</div>
+</div>
+</body></html>

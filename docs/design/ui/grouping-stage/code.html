@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>商品归组 - 三方比价支出依据扫描工具</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'audit-blue': '#2563eb',
+            'audit-bg': '#f8fafc',
+            'audit-border': '#e2e8f0',
+            'status-high': '#22c55e',
+            'status-med': '#f59e0b',
+            'status-low': '#ef4444',
+          }
+        }
+      }
+    }
+  </script>
+<style data-purpose="custom-scrollbar">
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+  </style>
+<style data-purpose="layout-styles">
+    .main-container { height: calc(100vh - 120px); }
+    .side-list { width: 320px; }
+    .content-area { flex: 1; min-width: 0; }
+    .problem-panel { width: 300px; transition: all 0.3s ease; }
+    .problem-panel.collapsed { width: 0; overflow: hidden; border-left: none; }
+    .drawer-overlay { background: rgba(0,0,0,0.4); opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
+    .drawer-overlay.active { opacity: 1; pointer-events: auto; }
+    .right-drawer { transform: translateX(100%); transition: transform 0.3s ease-out; width: 400px; }
+    .right-drawer.active { transform: translateX(0); }
+  </style>
+</head>
+<body class="bg-audit-bg text-slate-900 font-sans">
+<!-- BEGIN: Workbench Header Shell Mockup -->
+<header class="bg-white border-b border-audit-border px-6 py-3 flex items-center justify-between sticky top-0 z-10">
+<div class="flex items-center gap-4">
+<button class="text-slate-500 hover:text-slate-800"><i class="fas fa-arrow-left"></i></button>
+<div>
+<h1 class="text-sm font-medium text-slate-500">当前项目</h1>
+<p class="text-lg font-bold">2026Q1 办公设备采购比价 <i class="fas fa-lock text-slate-300 text-xs ml-1"></i></p>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<span class="text-xs text-slate-400 flex items-center gap-1">
+<span class="w-2 h-2 bg-green-500 rounded-full"></span> 自动保存于 14:45
+      </span>
+<button class="px-4 py-1.5 border border-slate-300 rounded text-sm hover:bg-slate-50">项目设置</button>
+<button class="px-4 py-1.5 bg-audit-blue text-white rounded text-sm flex items-center gap-2">
+<i class="fas fa-file-export"></i> 导出 Excel 审计底稿
+      </button>
+</div>
+</header>
+<!-- END: Workbench Header Shell Mockup -->
+<!-- BEGIN: Stepper Navigation -->
+<nav class="bg-white border-b border-audit-border px-6 py-2 flex items-center gap-8">
+<div class="flex items-center text-green-600 gap-2 text-sm font-medium">
+<span class="w-5 h-5 rounded-full border border-green-600 flex items-center justify-center bg-green-50"><i class="fas fa-check text-[10px]"></i></span>
+      1. 导入文件
+    </div>
+<div class="flex items-center text-green-600 gap-2 text-sm font-medium">
+<span class="w-5 h-5 rounded-full border border-green-600 flex items-center justify-center bg-green-50"><i class="fas fa-check text-[10px]"></i></span>
+      2. 标准化
+    </div>
+<div class="flex items-center text-audit-blue gap-2 text-sm font-bold border-b-2 border-audit-blue pb-2 -mb-2">
+<span class="w-5 h-5 rounded-full bg-audit-blue text-white flex items-center justify-center">3</span>
+      3. 商品归组
+    </div>
+<div class="flex items-center text-slate-400 gap-2 text-sm font-medium">
+<span class="w-5 h-5 rounded-full border border-slate-300 flex items-center justify-center">4</span>
+      4. 符合性审查
+    </div>
+<div class="flex items-center text-slate-400 gap-2 text-sm font-medium">
+<span class="w-5 h-5 rounded-full border border-slate-300 flex items-center justify-center">5</span>
+      5. 比价与导出
+    </div>
+</nav>
+<!-- END: Stepper Navigation -->
+<!-- BEGIN: Main Content Area -->
+<main class="main-container flex overflow-hidden">
+<!-- LEFT: Candidate Groups List -->
+<aside class="side-list bg-white border-r border-audit-border flex flex-col" data-purpose="candidate-list">
+<div class="p-4 border-b border-audit-border flex justify-between items-center bg-slate-50/50">
+<h2 class="font-bold text-slate-700">归组建议 (24)</h2>
+<button class="text-audit-blue text-xs hover:underline">批量确认</button>
+</div>
+<div class="flex-1 overflow-y-auto">
+<!-- Group Item Active -->
+<div class="p-4 border-l-4 border-audit-blue bg-blue-50 cursor-pointer">
+<div class="flex justify-between items-start mb-1">
+<span class="text-xs font-bold text-slate-400">GROUP-001</span>
+<span class="px-1.5 py-0.5 bg-green-100 text-green-700 text-[10px] rounded">置信度: 高</span>
+</div>
+<p class="text-sm font-bold text-slate-900 truncate">HP LaserJet Pro M404dn</p>
+<p class="text-xs text-slate-500 mt-1">命中 3 家供应商 | 包含 4 条明细</p>
+</div>
+<!-- Group Item Mismatch Warning -->
+<div class="p-4 border-l-4 border-transparent border-b border-slate-100 hover:bg-slate-50 cursor-pointer">
+<div class="flex justify-between items-start mb-1">
+<span class="text-xs font-bold text-slate-400">GROUP-002</span>
+<span class="px-1.5 py-0.5 bg-amber-100 text-amber-700 text-[10px] rounded">置信度: 中</span>
+</div>
+<p class="text-sm font-bold text-slate-900 truncate">得力(deli) 70g A4复印纸</p>
+<div class="flex items-center gap-2 mt-1">
+<p class="text-xs text-slate-500">命中 2 家 | <span class="text-red-500">单位不一致</span></p>
+</div>
+</div>
+<!-- Group Item Normal -->
+<div class="p-4 border-l-4 border-transparent border-b border-slate-100 hover:bg-slate-50 cursor-pointer">
+<div class="flex justify-between items-start mb-1">
+<span class="text-xs font-bold text-slate-400">GROUP-003</span>
+<span class="px-1.5 py-0.5 bg-green-100 text-green-700 text-[10px] rounded">置信度: 高</span>
+</div>
+<p class="text-sm font-bold text-slate-900 truncate">晨光(M&amp;G) 中性笔 0.5mm</p>
+<p class="text-xs text-slate-500 mt-1">命中 3 家供应商 | 包含 3 条明细</p>
+</div>
+<!-- Group Item Unconfirmed -->
+<div class="p-4 border-l-4 border-transparent border-b border-slate-100 hover:bg-slate-50 cursor-pointer opacity-70">
+<div class="flex justify-between items-start mb-1">
+<span class="text-xs font-bold text-slate-400">GROUP-004</span>
+<span class="px-1.5 py-0.5 bg-slate-200 text-slate-600 text-[10px] rounded">置信度: 低</span>
+</div>
+<p class="text-sm font-bold text-slate-900 truncate">ThinkPad E14 电脑包</p>
+<p class="text-xs text-slate-500 mt-1 italic">可能是非同类项</p>
+</div>
+</div>
+</aside>
+<!-- CENTER: Detail Comparison View -->
+<section class="content-area bg-slate-50 flex flex-col" data-purpose="group-detail">
+<!-- Toolbar -->
+<div class="px-6 py-4 border-b border-audit-border bg-white flex justify-between items-center shadow-sm">
+<div class="flex items-center gap-3">
+<span class="px-3 py-1 bg-slate-100 text-slate-700 rounded-full text-xs font-bold">GROUP-001</span>
+<h3 class="text-base font-bold">HP LaserJet Pro M404dn 对比详情</h3>
+</div>
+<div class="flex gap-2">
+<button class="px-4 py-1.5 border border-slate-300 rounded text-sm hover:bg-slate-50 text-slate-700">标记为不可比</button>
+<button class="px-4 py-1.5 border border-slate-300 rounded text-sm hover:bg-slate-50 text-slate-700">手动拆分</button>
+<button class="px-6 py-1.5 bg-audit-blue text-white rounded text-sm font-medium shadow-sm hover:bg-blue-700">确认此分组</button>
+</div>
+</div>
+<!-- Comparison Grid -->
+<div class="flex-1 p-6 overflow-auto">
+<div class="grid grid-cols-3 gap-6">
+<!-- Supplier A -->
+<article class="bg-white rounded-xl border border-audit-border shadow-sm flex flex-col" data-purpose="supplier-card">
+<header class="p-4 border-b border-slate-100 bg-slate-50/50 rounded-t-xl">
+<div class="flex justify-between items-center mb-2">
+<span class="px-2 py-0.5 bg-blue-100 text-blue-700 text-[10px] font-bold rounded">供应商 A</span>
+<button class="text-slate-400 hover:text-slate-600"><i class="fas fa-ellipsis-v"></i></button>
+</div>
+<h4 class="font-bold text-slate-900 leading-tight">HP LaserJet Pro M404dn (W1A53A)</h4>
+</header>
+<div class="p-4 space-y-4">
+<div>
+<label class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">规格参数</label>
+<p class="text-sm text-slate-700 mt-1">双面激光 / 自动双面 / 每分钟40页</p>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<div>
+<label class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">报价单位</label>
+<p class="text-sm text-slate-700 mt-1">台</p>
+</div>
+<div>
+<label class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">数量</label>
+<p class="text-sm text-slate-700 mt-1">5</p>
+</div>
+</div>
+<div class="pt-4 border-t border-slate-50">
+<label class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">含税单价</label>
+<div class="flex items-center justify-between mt-1">
+<span class="text-lg font-bold text-slate-900">¥ 2,450.00</span>
+<button class="p-1.5 bg-blue-50 text-blue-600 rounded-md text-xs hover:bg-blue-100" onclick="toggleDrawer()" title="查看核价证据">
+<i class="fas fa-search-plus"></i> 证据
+                  </button>
+</div>
+</div>
+</div>
+</article>
+<!-- Supplier B - Highlight Mismatch -->
+<article class="bg-white rounded-xl border-2 border-red-200 shadow-sm flex flex-col relative" data-purpose="supplier-card">
+<div class="absolute -top-3 left-4 px-2 py-0.5 bg-red-500 text-white text-[10px] rounded font-bold">单位冲突风险</div>
+<header class="p-4 border-b border-slate-100 bg-red-50/30 rounded-t-xl">
+<div class="flex justify-between items-center mb-2">
+<span class="px-2 py-0.5 bg-slate-100 text-slate-700 text-[10px] font-bold rounded">供应商 B</span>
+<button class="text-slate-400 hover:text-slate-600"><i class="fas fa-ellipsis-v"></i></button>
+</div>
+<h4 class="font-bold text-slate-900 leading-tight">HP M404dn 激光打印机</h4>
+</header>
+<div class="p-4 space-y-4">
+<div>
+<label class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">规格参数</label>
+<p class="text-sm text-slate-700 mt-1 font-medium">惠普原装 / 需确认是否包含硒鼓</p>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<div class="bg-red-50 p-2 rounded">
+<label class="text-[10px] text-red-400 uppercase font-bold tracking-wider flex items-center gap-1">
+<i class="fas fa-exclamation-triangle"></i> 报价单位
+                  </label>
+<p class="text-sm text-red-700 mt-1 font-bold underline decoration-dotted">套</p>
+</div>
+<div>
+<label class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">数量</label>
+<p class="text-sm text-slate-700 mt-1 font-bold">5</p>
+</div>
+</div>
+<div class="pt-4 border-t border-slate-50">
+<label class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">含税单价</label>
+<div class="flex items-center justify-between mt-1">
+<span class="text-lg font-bold text-slate-900">¥ 2,850.00</span>
+<button class="p-1.5 bg-red-50 text-red-600 rounded-md text-xs hover:bg-red-100" onclick="toggleDrawer()" title="查看核价证据">
+<i class="fas fa-search-plus"></i> 证据
+                  </button>
+</div>
+</div>
+</div>
+<div class="px-4 py-2 bg-red-50 border-t border-red-100 rounded-b-xl text-[11px] text-red-600 italic">
+              AI注：该供应商报价可能包含“大容量耗材套装”，导致单价偏高。
+            </div>
+</article>
+<!-- Supplier C -->
+<article class="bg-white rounded-xl border border-audit-border shadow-sm flex flex-col opacity-60 hover:opacity-100 transition-opacity" data-purpose="supplier-card">
+<header class="p-4 border-b border-slate-100 bg-slate-50/50 rounded-t-xl">
+<div class="flex justify-between items-center mb-2">
+<span class="px-2 py-0.5 bg-slate-100 text-slate-700 text-[10px] font-bold rounded">供应商 C</span>
+<button class="text-slate-400 hover:text-slate-600"><i class="fas fa-ellipsis-v"></i></button>
+</div>
+<h4 class="font-bold text-slate-900 leading-tight">惠普 M404dn</h4>
+</header>
+<div class="p-4 space-y-4 text-slate-400 italic">
+<p class="text-sm text-center py-8">该供应商无匹配项<br/><button class="text-audit-blue text-xs mt-2 not-italic underline">从库中手动匹配</button></p>
+</div>
+</article>
+</div>
+<!-- Collaborative Merge Section -->
+<div class="mt-8 border-2 border-dashed border-slate-200 rounded-xl p-8 flex flex-col items-center justify-center text-slate-400 hover:bg-slate-50 hover:border-audit-blue hover:text-audit-blue cursor-pointer transition-all">
+<i class="fas fa-plus-circle text-2xl mb-2"></i>
+<p class="text-sm font-medium">将更多未分类行拖拽至此进行合并</p>
+</div>
+</div>
+<!-- Footer Action -->
+<footer class="bg-white border-t border-audit-border p-4 flex items-center justify-between">
+<div class="flex items-center gap-2">
+<button class="px-3 py-1 text-xs text-slate-600 border border-slate-200 rounded hover:bg-slate-50">
+<i class="fas fa-redo-alt mr-1"></i> 重新运行归组引擎
+          </button>
+<div class="flex items-center gap-2 text-xs text-slate-400 ml-4">
+<input class="rounded text-audit-blue focus:ring-audit-blue" id="save-rule" type="checkbox"/>
+<label for="save-rule">保存到全局规则</label>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-2 text-xs text-slate-500 bg-slate-50 px-3 py-2 rounded border border-slate-100">
+<i class="fas fa-info-circle text-audit-blue"></i>
+<span>当前存在 <span class="font-bold text-slate-700">8</span> 项待确认归组，未确认项将不计入最终比价结论。您可以现在处理，或直接进入下一步。</span>
+</div>
+<div class="flex gap-3">
+<button class="px-6 py-2 border border-slate-300 rounded text-sm font-medium text-slate-700">保存草稿</button>
+<button class="px-10 py-2 bg-audit-blue text-white rounded text-sm font-bold shadow-md hover:bg-blue-700 flex items-center gap-2">
+              下一步：符合性审查 <i class="fas fa-arrow-right"></i>
+</button>
+</div>
+</div>
+</footer>
+</section>
+<!-- RIGHT: Problem Panel (Collapsible) -->
+<aside class="problem-panel border-l border-audit-border bg-white flex flex-col shadow-[-4px_0_12px_rgba(0,0,0,0.02)]" id="problemPanel">
+<div class="p-4 border-b border-audit-border flex justify-between items-center">
+<h3 class="font-bold text-slate-700 flex items-center gap-2">
+          待处理问题 <span class="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full">12</span>
+</h3>
+<button class="text-slate-400 hover:text-slate-600" onclick="toggleProblemPanel()"><i class="fas fa-chevron-right"></i></button>
+</div>
+<div class="flex-1 overflow-y-auto p-4 space-y-4">
+<!-- Critical Blockers -->
+<section>
+<h4 class="text-[10px] text-slate-400 font-bold uppercase mb-2 tracking-widest">关键阻断 (4)</h4>
+<div class="bg-white border border-red-100 rounded p-3 mb-2 shadow-sm hover:shadow-md transition-shadow cursor-pointer">
+<div class="flex justify-between items-center mb-1">
+<span class="px-1.5 py-0.5 bg-red-100 text-red-600 text-[10px] font-bold rounded">单位不一致</span>
+<span class="text-[10px] text-slate-400">商品归组</span>
+</div>
+<p class="text-xs text-slate-800 leading-relaxed font-medium">同一商品组 (显示器) 供应商含税/未税口径不同</p>
+</div>
+<div class="bg-white border border-red-100 rounded p-3 mb-2 shadow-sm">
+<div class="flex justify-between items-center mb-1">
+<span class="px-1.5 py-0.5 bg-red-100 text-red-600 text-[10px] font-bold rounded">单位不一致</span>
+<span class="text-[10px] text-slate-400">商品归组</span>
+</div>
+<p class="text-xs text-slate-800 leading-relaxed font-medium">供应商 B 单位为 "件" ，其余供应商为 "个"</p>
+</div>
+</section>
+<!-- Confirmation Tasks -->
+<section>
+<h4 class="text-[10px] text-slate-400 font-bold uppercase mb-2 tracking-widest">待确认/核对 (8)</h4>
+<div class="bg-white border border-amber-100 rounded p-3 mb-2 shadow-sm">
+<div class="flex justify-between items-center mb-1">
+<span class="px-1.5 py-0.5 bg-amber-100 text-amber-600 text-[10px] font-bold rounded">低置信字段</span>
+<span class="text-[10px] text-slate-400">标准化</span>
+</div>
+<p class="text-xs text-slate-800 leading-relaxed">供应商 C 的 "规格型号" 识别置信度仅 62%</p>
+</div>
+<div class="bg-white border border-amber-100 rounded p-3 mb-2 shadow-sm">
+<div class="flex justify-between items-center mb-1">
+<span class="px-1.5 py-0.5 bg-amber-100 text-amber-600 text-[10px] font-bold rounded">未确认归组</span>
+<span class="text-[10px] text-slate-400">商品归组</span>
+</div>
+<p class="text-xs text-slate-800 leading-relaxed">有 5 个高置信候选组等待人工确认</p>
+</div>
+</section>
+</div>
+<div class="p-4 bg-blue-50 border-t border-blue-100">
+<div class="flex items-center gap-2 text-[11px] text-blue-700 leading-tight">
+<i class="fas fa-info-circle"></i> 提示：未完成确认的归组项将按单行独立显示在比价表中。
+        </div>
+</div>
+</aside>
+</main>
+<!-- END: Main Content Area -->
+<!-- BEGIN: Evidence Drawer -->
+<div class="drawer-overlay fixed inset-0 z-20" id="drawerOverlay" onclick="toggleDrawer()"></div>
+<aside class="right-drawer fixed top-0 right-0 bottom-0 bg-white z-30 shadow-2xl flex flex-col" id="evidenceDrawer">
+<header class="p-6 border-b border-audit-border flex justify-between items-center bg-slate-50">
+<div>
+<h3 class="font-bold text-lg text-slate-900">核价证据详情</h3>
+<p class="text-xs text-slate-500">供应商 B - HP M404dn 激光打印机</p>
+</div>
+<button class="text-slate-400 hover:text-slate-600 text-xl" onclick="toggleDrawer()">
+<i class="fas fa-times"></i>
+</button>
+</header>
+<div class="flex-1 overflow-y-auto p-6 space-y-6">
+<!-- Mismatch Evidence -->
+<div class="bg-red-50 border border-red-200 rounded-lg p-4">
+<h4 class="text-sm font-bold text-red-800 mb-2 flex items-center gap-2">
+<i class="fas fa-search"></i> OCR 识别细节 (单位: 套)
+        </h4>
+<div class="bg-white border border-red-100 rounded overflow-hidden">
+<!-- Placeholder for OCR Image Crop -->
+<div class="h-32 bg-slate-200 flex items-center justify-center text-slate-400 italic text-xs text-center px-4">
+            [此处显示原始 PDF 截图裁剪: "单位: 套 (含3支原装墨粉)"]
+          </div>
+</div>
+<p class="mt-2 text-xs text-red-700 leading-relaxed">
+          AI 解析：该供应商在原始报价单注释中注明“套装”包含额外耗材。建议将单价拆分为“打印机”+“墨粉”或通过单位转换进行等价比较。
+        </p>
+</div>
+<!-- General Info -->
+<div class="space-y-4">
+<div>
+<label class="text-[10px] text-slate-400 font-bold uppercase">原始行数据</label>
+<pre class="mt-1 p-3 bg-slate-50 rounded border border-slate-200 text-[11px] text-slate-600 font-mono leading-tight whitespace-pre-wrap">ID: L-0922
+Description: HP M404dn Laser Jet (Standard Bundle)
+Price: 2,850.00
+Unit: 套
+Qty: 5
+Brand: HP
+          </pre>
+</div>
+<div>
+<label class="text-[10px] text-slate-400 font-bold uppercase">映射规则命中</label>
+<ul class="mt-2 space-y-1">
+<li class="text-xs text-slate-600 flex items-center gap-2"><i class="fas fa-check text-green-500"></i> 命中品牌库 [HP/惠普]</li>
+<li class="text-xs text-slate-600 flex items-center gap-2"><i class="fas fa-check text-green-500"></i> 命中型号库 [M404dn]</li>
+<li class="text-xs text-red-600 flex items-center gap-2"><i class="fas fa-exclamation-triangle"></i> 映射至非标准单位 [套]</li>
+</ul>
+</div>
+</div>
+</div>
+<footer class="p-6 border-t border-audit-border bg-slate-50 grid grid-cols-2 gap-3">
+<button class="px-4 py-2 border border-slate-300 rounded text-sm font-bold hover:bg-white">标记为误报</button>
+<button class="px-4 py-2 bg-audit-blue text-white rounded text-sm font-bold hover:bg-blue-700">更新单位映射</button>
+</footer>
+</aside>
+<!-- END: Evidence Drawer -->
+<script data-purpose="interaction-logic">
+    function toggleProblemPanel() {
+      const panel = document.getElementById('problemPanel');
+      panel.classList.toggle('collapsed');
+    }
+
+    function toggleDrawer() {
+      const drawer = document.getElementById('evidenceDrawer');
+      const overlay = document.getElementById('drawerOverlay');
+      drawer.classList.toggle('active');
+      overlay.classList.toggle('active');
+    }
+  </script>
+</body></html>

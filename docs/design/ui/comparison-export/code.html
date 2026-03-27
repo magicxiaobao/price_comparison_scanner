@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>比价与导出 - 三方比价支出依据扫描工具</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f0f7ff',
+              100: '#e0effe',
+              600: '#2563eb',
+              700: '#1d4ed8',
+            }
+          }
+        }
+      }
+    }
+  </script>
+<style data-purpose="custom-layout">
+    body {
+      background-color: #f8fafc;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+    .table-sticky-header th {
+      position: sticky;
+      top: 0;
+      background: #f9fafb;
+      z-index: 10;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+<!-- BEGIN: MainHeader -->
+<header class="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between sticky top-0 z-50">
+<div class="flex items-center gap-4">
+<a class="text-gray-400 hover:text-gray-600" href="#">
+<svg class="w-6 h-6" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path d="M10 19l-7-7m0 0l7-7m-7 7h18" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+</a>
+<div class="flex flex-col">
+<span class="text-xs text-gray-500">当前项目</span>
+<div class="flex items-center gap-2">
+<h1 class="text-lg font-bold text-gray-900">2026Q1 办公设备采购比价</h1>
+<svg class="w-4 h-4 text-gray-400" fill="currentColor" viewbox="0 0 20 20"><path clip-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" fill-rule="evenodd"></path></svg>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<span class="text-xs text-gray-400 flex items-center gap-1">
+<span class="w-2 h-2 bg-green-500 rounded-full"></span> 自动保存于 15:20
+      </span>
+<button class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">项目设置</button>
+<button class="px-4 py-2 text-sm font-medium text-white bg-brand-600 rounded-md hover:bg-brand-700 flex items-center gap-2">
+<svg class="w-4 h-4" fill="currentColor" viewbox="0 0 20 20"><path clip-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" fill-rule="evenodd"></path></svg>
+        导出 Excel 审计底稿
+      </button>
+</div>
+</header>
+<!-- END: MainHeader -->
+<!-- BEGIN: Stepper -->
+<nav class="bg-white border-b border-gray-200 px-6">
+<div class="flex max-w-5xl mx-auto">
+<div class="flex-1 py-4 border-b-2 border-transparent text-gray-400 text-sm flex items-center justify-center gap-2">
+<span class="w-5 h-5 rounded-full border border-gray-300 flex items-center justify-center text-xs">1</span> 1. 导入文件
+      </div>
+<div class="flex-1 py-4 border-b-2 border-transparent text-gray-400 text-sm flex items-center justify-center gap-2">
+<span class="w-5 h-5 rounded-full border border-gray-300 flex items-center justify-center text-xs">2</span> 2. 标准化
+      </div>
+<div class="flex-1 py-4 border-b-2 border-transparent text-gray-400 text-sm flex items-center justify-center gap-2">
+<span class="w-5 h-5 rounded-full border border-gray-300 flex items-center justify-center text-xs">3</span> 3. 商品归组
+      </div>
+<div class="flex-1 py-4 border-b-2 border-transparent text-gray-400 text-sm flex items-center justify-center gap-2">
+<span class="w-5 h-5 rounded-full border border-gray-300 flex items-center justify-center text-xs">4</span> 4. 符合性审查
+      </div>
+<div class="flex-1 py-4 border-b-2 border-brand-600 text-brand-600 font-bold text-sm flex items-center justify-center gap-2">
+<span class="w-5 h-5 rounded-full bg-brand-600 text-white flex items-center justify-center text-xs">5</span> 5. 比价与导出
+      </div>
+</div>
+</nav>
+<!-- END: Stepper -->
+<main class="flex-1 overflow-auto p-6 space-y-6">
+<!-- BEGIN: SummaryCards -->
+<section class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<!-- Card: All-in Lowest Price -->
+<div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex items-start gap-4">
+<div class="p-3 bg-blue-50 rounded-lg">
+<svg class="w-6 h-6 text-brand-600" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+</div>
+<div>
+<p class="text-sm text-gray-500 mb-1">名义总价最低 (All-in Lowest)</p>
+<div class="flex items-baseline gap-2">
+<h3 class="text-2xl font-bold text-gray-900">供应商 A</h3>
+<span class="text-brand-600 font-semibold text-lg">¥ 142,500.00</span>
+</div>
+<p class="text-xs text-gray-400 mt-1 italic">基于原始报价，未剔除异常项</p>
+</div>
+</div>
+<!-- Card: Valid Lowest Price -->
+<div class="bg-white p-5 rounded-xl border border-blue-200 bg-blue-50/20 shadow-sm flex items-start gap-4 ring-1 ring-brand-100">
+<div class="p-3 bg-green-50 rounded-lg">
+<svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+</div>
+<div>
+<p class="text-sm text-gray-500 mb-1">合规最低价建议 (Valid Lowest)</p>
+<div class="flex items-baseline gap-2">
+<h3 class="text-2xl font-bold text-gray-900">供应商 C</h3>
+<span class="text-green-600 font-semibold text-lg">¥ 138,240.00</span>
+</div>
+<p class="text-xs text-green-700/70 mt-1 italic">剔除所有无效/异常项后的最优选</p>
+</div>
+</div>
+</section>
+<!-- END: SummaryCards -->
+<!-- BEGIN: ComparisonTable -->
+<section class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+<div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
+<h2 class="font-bold text-gray-800">分组比价明细</h2>
+<div class="flex gap-4">
+<span class="flex items-center gap-1 text-xs text-gray-500"><span class="w-3 h-3 bg-blue-50 border border-blue-200 rounded"></span> 全量最低 (All-in)</span>
+<span class="flex items-center gap-1 text-xs text-gray-500"><span class="w-3 h-3 bg-green-50 border border-green-200 rounded"></span> 有效最低 (Valid)</span>
+<span class="flex items-center gap-1 text-xs text-gray-500"><span class="w-3 h-3 bg-red-50 border border-red-200 rounded"></span> 异常标记</span>
+</div>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-sm text-left table-auto">
+<thead class="bg-gray-50 text-gray-600 font-medium table-sticky-header">
+<tr>
+<th class="px-6 py-3 border-b border-gray-200">商品归组 (Item Group)</th>
+<th class="px-6 py-3 border-b border-gray-200 text-right">供应商 A (CNY)</th>
+<th class="px-6 py-3 border-b border-gray-200 text-right">供应商 B (CNY)</th>
+<th class="px-6 py-3 border-b border-gray-200 text-right">供应商 C (CNY)</th>
+<th class="px-6 py-3 border-b border-gray-200 text-right text-brand-600">全量最低价</th>
+<th class="px-6 py-3 border-b border-gray-200 text-right text-green-600">有效最低价</th>
+<th class="px-6 py-3 border-b border-gray-200 text-center">离散度</th>
+<th class="px-6 py-3 border-b border-gray-200 text-center">状态</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-gray-100">
+<!-- Row 1 -->
+<tr class="hover:bg-gray-50/50">
+<td class="px-6 py-4">
+<div class="font-medium text-gray-900">HP LaserJet Pro M404dn</div>
+<div class="text-xs text-gray-400">激光打印机 · 数量: 5</div>
+</td>
+<td class="px-6 py-4 text-right bg-blue-50/50">2,450.00</td>
+<td class="px-6 py-4 text-right">2,580.00</td>
+<td class="px-6 py-4 text-right">2,480.00</td>
+<td class="px-6 py-4 text-right font-semibold text-brand-600">2,450.00</td>
+<td class="px-6 py-4 text-right font-semibold text-green-600">2,450.00</td>
+<td class="px-6 py-4 text-center text-gray-500">5.1%</td>
+<td class="px-6 py-4 text-center text-gray-300">
+<span class="text-xs text-green-600">正常</span>
+</td>
+</tr>
+<!-- Row 2 (With Exception) -->
+<tr class="hover:bg-gray-50/50">
+<td class="px-6 py-4">
+<div class="font-medium text-gray-900">得力(deli) 70g A4复印纸</div>
+<div class="text-xs text-gray-400">800张/包 · 数量: 20</div>
+</td>
+<td class="px-6 py-4 text-right">165.00</td>
+<td class="px-6 py-4 text-right bg-red-50 text-red-600">
+<span class="inline-flex items-center gap-1" title="单位不一致: 包 vs 箱">195.00 <svg class="w-3 h-3" fill="currentColor" viewbox="0 0 20 20"><path clip-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" fill-rule="evenodd"></path></svg></span>
+</td>
+<td class="px-6 py-4 text-right bg-green-50/50">162.50</td>
+<td class="px-6 py-4 text-right font-semibold text-brand-600 italic line-through decoration-red-400">162.50</td>
+<td class="px-6 py-4 text-right font-semibold text-green-600 underline">162.50</td>
+<td class="px-6 py-4 text-center text-gray-500">18.2%</td>
+<td class="px-6 py-4 text-center">
+<span class="px-2 py-0.5 bg-red-100 text-red-700 text-[10px] rounded-full uppercase font-bold">Error</span>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-gray-50/50">
+<td class="px-6 py-4">
+<div class="font-medium text-gray-900">ThinkPad E14 i5/16G/512G</div>
+<div class="text-xs text-gray-400">笔记本电脑 · 数量: 10</div>
+</td>
+<td class="px-6 py-4 text-right">5,299.00</td>
+<td class="px-6 py-4 text-right">5,450.00</td>
+<td class="px-6 py-4 text-right bg-blue-50/50">5,190.00</td>
+<td class="px-6 py-4 text-right font-semibold text-brand-600">5,190.00</td>
+<td class="px-6 py-4 text-right font-semibold text-green-600">5,190.00</td>
+<td class="px-6 py-4 text-center text-gray-500">4.8%</td>
+<td class="px-6 py-4 text-center text-gray-300">
+<span class="text-xs text-green-600">正常</span>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="hover:bg-gray-50/50">
+<td class="px-6 py-4">
+<div class="font-medium text-gray-900">晨光(M&amp;G) 中性笔 0.5mm</div>
+<div class="text-xs text-gray-400">12支/盒 · 数量: 50</div>
+</td>
+<td class="px-6 py-4 text-right bg-blue-50/50">12.50</td>
+<td class="px-6 py-4 text-right">13.20</td>
+<td class="px-6 py-4 text-right">12.80</td>
+<td class="px-6 py-4 text-right font-semibold text-brand-600">12.50</td>
+<td class="px-6 py-4 text-right font-semibold text-green-600">12.50</td>
+<td class="px-6 py-4 text-center text-gray-500">5.4%</td>
+<td class="px-6 py-4 text-center text-gray-300">
+<span class="text-xs text-green-600">正常</span>
+</td>
+</tr>
+<!-- Summary Row -->
+<tr class="bg-gray-50 font-bold border-t-2 border-gray-200">
+<td class="px-6 py-4 text-gray-700">总计 (Total Estimate)</td>
+<td class="px-6 py-4 text-right text-gray-900">142,500.00</td>
+<td class="px-6 py-4 text-right text-gray-900">148,650.00</td>
+<td class="px-6 py-4 text-right text-green-600">138,240.00</td>
+<td class="px-6 py-4 text-right text-brand-600">142,500.00</td>
+<td class="px-6 py-4 text-right text-green-700 underline decoration-double">138,240.00</td>
+<td class="px-6 py-4" colspan="2"></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<!-- END: ComparisonTable -->
+<!-- BEGIN: ExportSection -->
+<section class="bg-amber-50 border border-amber-200 rounded-xl p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+<div class="flex items-start gap-4">
+<div class="mt-1 p-2 bg-amber-100 rounded-full">
+<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+</div>
+<div>
+<h4 class="text-amber-900 font-bold">导出预览状态 (Export Preview)</h4>
+<p class="text-sm text-amber-800 leading-relaxed max-w-2xl mt-1">
+            当前项目中存在 <span class="font-bold underline">2 项待处理异常</span>，已在导出预览中标记。
+            <span class="block mt-1">您可以直接导出 Excel 审计底稿，异常信息将同步写入追溯表，辅助人工复核。</span>
+</p>
+</div>
+</div>
+<div class="shrink-0">
+<button class="bg-white hover:bg-amber-100 text-amber-700 border border-amber-300 px-6 py-3 rounded-lg font-bold shadow-sm transition-colors flex items-center gap-2">
+<span>继续导出审计底稿</span>
+<svg class="w-4 h-4" fill="currentColor" viewbox="0 0 20 20"><path clip-rule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" fill-rule="evenodd"></path></svg>
+</button>
+</div>
+</section>
+<!-- END: ExportSection -->
+</main>
+<!-- BEGIN: BottomAction -->
+<footer class="bg-white border-t border-gray-200 px-6 py-4 flex justify-between items-center">
+<div class="flex items-center gap-6">
+<button class="text-gray-500 hover:text-gray-700 flex items-center gap-2 text-sm">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+        重新运行比价逻辑
+      </button>
+<div class="h-4 w-px bg-gray-200"></div>
+<button class="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-600 bg-gray-50 border border-gray-200 rounded hover:bg-gray-100 hover:text-gray-900 transition-colors">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+  保存到全局规则
+</button>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-1.5 text-amber-600 bg-amber-50 px-3 py-1.5 rounded-md border border-amber-100">
+<svg class="w-4 h-4" fill="currentColor" viewbox="0 0 20 20"><path clip-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" fill-rule="evenodd"></path></svg>
+<span class="text-xs font-medium">存留 2 项异常待复核</span>
+</div>
+<div class="flex gap-3">
+<button class="px-8 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 shadow-sm">
+      保存草稿
+    </button>
+<button class="px-8 py-2.5 text-sm font-bold text-white bg-brand-600 rounded-lg hover:bg-brand-700 shadow-md shadow-brand-100 flex items-center gap-2">
+<span>完成并导出</span>
+<svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path d="M14 5l7 7m0 0l-7 7m7-7H3" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+</button>
+</div>
+</div>
+</footer>
+<!-- END: BottomAction -->
+</body></html>

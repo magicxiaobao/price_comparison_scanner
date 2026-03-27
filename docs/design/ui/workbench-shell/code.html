@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>三方比价支出依据扫描工具 - 工作台</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
+<style>
+        :root {
+            --primary-blue: #2563eb;
+            --success-green: #10b981;
+            --warning-yellow: #f59e0b;
+            --error-red: #ef4444;
+            --dirty-orange: #f97316;
+            --skipped-gray: #94a3b8;
+        }
+        body {
+            font-family: 'Inter', -apple-system, "Microsoft YaHei", sans-serif;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            color: #1e293b;
+        }
+        .header { height: 56px; border-bottom: 1px solid #e2e8f0; flex-shrink: 0; }
+        .stage-nav { height: 48px; border-bottom: 1px solid #e2e8f0; background: #f8fafc; flex-shrink: 0; }
+        .main-container { flex: 1; display: flex; overflow: hidden; }
+        .workspace { flex: 1; overflow-y: auto; background: #fff; position: relative; }
+        .sidebar-right { width: 320px; border-left: 1px solid #e2e8f0; background: #f8fafc; display: flex; flex-direction: column; flex-shrink: 0; }
+        
+        .stage-item { position: relative; display: flex; align-items: center; padding: 0 24px; height: 100%; cursor: pointer; border-right: 1px solid #f1f5f9; font-size: 0.875rem; color: #64748b; font-weight: 500; transition: all 0.2s; }
+        .stage-item:hover { background: #f1f5f9; }
+        .stage-item.active { background: #fff; color: var(--primary-blue); box-shadow: inset 0 -2px 0 var(--primary-blue); }
+        .stage-item.completed { color: var(--success-green); }
+        .stage-item.has-issue::after { content: ''; position: absolute; top: 12px; right: 12px; width: 6px; height: 6px; border-radius: 50%; background: var(--dirty-orange); }
+
+        .problem-item { border-left: 3px solid transparent; transition: all 0.2s; cursor: pointer; }
+        .problem-item:hover { background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        .problem-error { border-left-color: var(--error-red); }
+        .problem-warning { border-left-color: var(--warning-yellow); }
+
+        .status-pill { font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 4px; }
+        .pill-error { background: #fee2e2; color: #991b1b; }
+        .pill-warning { background: #fef3c7; color: #92400e; }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+
+        .evidence-drawer { position: fixed; right: 320px; bottom: 0; width: 480px; top: 104px; background: #fff; box-shadow: -4px 0 12px rgba(0,0,0,0.05); border-left: 1px solid #e2e8f0; z-index: 40; display: none; }
+        .evidence-drawer.open { display: block; }
+
+        .stage-table th { background: #f8fafc; font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: 600; padding: 12px; border-bottom: 1px solid #e2e8f0; text-align: left; }
+        .stage-table td { font-size: 13px; padding: 12px; border-bottom: 1px solid #f1f5f9; color: #334155; }
+        .row-hover:hover { background: #f8fafc; }
+        .mapped-badge { font-size: 10px; background: #dcfce7; color: #166534; padding: 2px 6px; border-radius: 9999px; }
+    </style>
+</head>
+<body class="bg-white">
+<!-- 顶部项目栏 -->
+<header class="header px-4 flex items-center justify-between bg-white">
+<div class="flex items-center gap-4">
+<button class="text-slate-400 hover:text-slate-600 transition-colors">
+<i class="fa-solid fa-arrow-left"></i>
+</button>
+<div class="h-4 w-[1px] bg-slate-200"></div>
+<div>
+<span class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">正在处理项目</span>
+<h2 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+                    2026Q1 办公设备采购比价
+                    <i class="fa-solid fa-lock text-[10px] text-slate-300"></i>
+</h2>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<div class="text-xs text-slate-500 mr-2 flex items-center gap-1">
+<span class="w-2 h-2 rounded-full bg-green-500"></span>
+                自动保存于 15:02
+            </div>
+<button class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-xs font-semibold transition-colors">项目设置</button>
+<button class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-semibold flex items-center gap-1 shadow-sm transition-colors">
+<i class="fa-solid fa-file-export"></i> 导出 Excel 审计底稿
+            </button>
+</div>
+</header>
+<!-- 阶段导航 -->
+<nav class="stage-nav flex">
+<div class="stage-item completed">
+<i class="fa-solid fa-circle-check mr-2"></i> 1. 导入文件
+        </div>
+<div class="stage-item completed">
+<i class="fa-solid fa-circle-check mr-2"></i> 2. 标准化
+        </div>
+<div class="stage-item active">
+<span class="w-5 h-5 rounded-full border border-blue-600 flex items-center justify-center text-[10px] mr-2">3</span> 3. 商品归组
+        </div>
+<div class="stage-item has-issue">
+<span class="w-5 h-5 rounded-full border border-slate-300 flex items-center justify-center text-[10px] mr-2">4</span> 4. 符合性审查
+        </div>
+<div class="stage-item">
+<span class="w-5 h-5 rounded-full border border-slate-300 flex items-center justify-center text-[10px] mr-2">5</span> 5. 比价与导出
+        </div>
+</nav>
+<!-- 主容器 -->
+<main class="main-container">
+<!-- 工作区 (Workspace) -->
+<section class="workspace">
+<div class="p-6">
+<!-- 状态提醒 -->
+<div class="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-6 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center text-orange-600">
+<i class="fa-solid fa-triangle-exclamation"></i>
+</div>
+<div>
+<h4 class="text-sm font-bold text-orange-800">上游数据已变更</h4>
+<p class="text-xs text-orange-600">由于在“标准化”阶段修改了供应商 A 的单价，当前的商品归组与比价结果已失效。建议重新运行归组匹配。</p>
+</div>
+</div>
+<button class="px-3 py-1.5 bg-orange-600 text-white text-xs font-bold rounded hover:bg-orange-700 transition-colors">重新运行匹配</button>
+</div>
+<!-- 核心业务操作区 -->
+<div class="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+<div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+<div class="flex items-center gap-4">
+<h3 class="text-sm font-bold text-slate-800">商品匹配清单</h3>
+<div class="flex items-center gap-2">
+<span class="text-xs text-slate-500">供应商筛选:</span>
+<select class="text-xs border-slate-200 rounded bg-white py-1 pl-2 pr-8 focus:ring-blue-500">
+<option>全部供应商 (3)</option>
+<option>联想科技</option>
+<option>得力办公</option>
+</select>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<button class="text-xs text-slate-600 px-3 py-1.5 bg-white border border-slate-200 rounded hover:bg-slate-50">批量确认</button>
+<button class="text-xs text-blue-600 px-3 py-1.5 bg-blue-50 border border-blue-100 rounded hover:bg-blue-100 font-medium">手动添加分组</button>
+</div>
+</div>
+<div class="overflow-x-auto">
+<table class="stage-table w-full">
+<thead>
+<tr>
+<th class="w-10"><input class="rounded border-slate-300 text-blue-600" type="checkbox"/></th>
+<th>标准商品组名称</th>
+<th>包含项数</th>
+<th>关键规格差异</th>
+<th>平均单价 (含税)</th>
+<th>匹配置信度</th>
+<th class="w-12"></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-hover cursor-pointer" onclick="document.getElementById('evidenceDrawer').classList.add('open')">
+<td><input class="rounded border-slate-300 text-blue-600" type="checkbox"/></td>
+<td>
+<div class="flex items-center gap-2">
+<span class="font-bold">27英寸 4K 显示器</span>
+<span class="mapped-badge">自动归组</span>
+</div>
+</td>
+<td>3 供应商 / 3 行</td>
+<td><span class="text-xs text-slate-500">接口一致, 亮度略有差异</span></td>
+<td class="font-mono text-sm">¥ 1,450.00</td>
+<td><span class="text-green-600 font-bold">94%</span></td>
+<td class="text-slate-400"><i class="fa-solid fa-chevron-right text-[10px]"></i></td>
+</tr>
+<tr class="row-hover cursor-pointer bg-amber-50/30" onclick="document.getElementById('evidenceDrawer').classList.add('open')">
+<td><input class="rounded border-slate-300 text-blue-600" type="checkbox"/></td>
+<td>
+<div class="flex items-center gap-2">
+<span class="font-bold text-amber-900">A4 复印纸 (80g)</span>
+<span class="text-[10px] bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">待人工确认</span>
+</div>
+</td>
+<td>2 供应商 / 4 行</td>
+<td><span class="text-xs text-red-500 font-medium">单位不一致 (件/包)</span></td>
+<td class="font-mono text-slate-400">--</td>
+<td><span class="text-amber-600 font-bold">65%</span></td>
+<td class="text-slate-400"><i class="fa-solid fa-chevron-right text-[10px]"></i></td>
+</tr>
+<tr class="row-hover cursor-pointer" onclick="document.getElementById('evidenceDrawer').classList.add('open')">
+<td><input class="rounded border-slate-300 text-blue-600" type="checkbox"/></td>
+<td>
+<div class="flex items-center gap-2">
+<span class="font-bold">无线激光演示笔</span>
+<span class="mapped-badge">自动归组</span>
+</div>
+</td>
+<td>3 供应商 / 3 行</td>
+<td><span class="text-xs text-slate-500">规格完全一致</span></td>
+<td class="font-mono text-sm">¥ 89.00</td>
+<td><span class="text-green-600 font-bold">100%</span></td>
+<td class="text-slate-400"><i class="fa-solid fa-chevron-right text-[10px]"></i></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="p-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 bg-white">
+<div>显示当前阶段 1 - 3 条，共 12 个归组项</div>
+<div class="flex gap-2">
+<button class="px-2 py-1 border border-slate-200 rounded disabled:opacity-50" disabled="">上一页</button>
+<button class="px-2 py-1 border border-slate-200 rounded hover:bg-slate-50">下一页</button>
+</div>
+</div>
+</div>
+<!-- 底部统计辅助 -->
+<div class="mt-8 grid grid-cols-3 gap-6">
+<div class="bg-blue-50 border border-blue-100 rounded-lg p-4">
+<div class="flex items-center gap-2 mb-3">
+<i class="fa-solid fa-microchip text-blue-600"></i>
+<h5 class="text-sm font-bold text-blue-900">算法处理进度</h5>
+</div>
+<div class="space-y-2">
+<div class="flex justify-between text-xs">
+<span class="text-blue-700">自动归组率</span>
+<span class="font-bold text-blue-800">85%</span>
+</div>
+<div class="w-full bg-blue-200 rounded-full h-1.5">
+<div class="bg-blue-600 h-1.5 rounded-full" style="width: 85%"></div>
+</div>
+</div>
+</div>
+<div class="bg-indigo-50 border border-indigo-100 rounded-lg p-4">
+<div class="flex items-center gap-2 mb-3">
+<i class="fa-solid fa-shield-halved text-indigo-600"></i>
+<h5 class="text-sm font-bold text-indigo-900">当前阶段校验</h5>
+</div>
+<div class="flex items-baseline gap-1">
+<span class="text-2xl font-bold text-indigo-800">12</span>
+<span class="text-xs text-indigo-600">/ 14 规则已核验</span>
+</div>
+</div>
+<div class="bg-slate-50 border border-slate-200 rounded-lg p-4">
+<div class="flex items-center gap-2 mb-3">
+<i class="fa-solid fa-clock-rotate-left text-slate-500"></i>
+<h5 class="text-sm font-bold text-slate-800">最近系统日志</h5>
+</div>
+<p class="text-[11px] text-slate-500 leading-relaxed">系统自动运行了 <b>"规格相似度算法 v2"</b>。发现 2 项可追溯异常，已同步至追溯面板。</p>
+</div>
+</div>
+</div>
+</section>
+<!-- 右侧异常与追溯面板 (Problem & Audit Panel) -->
+<aside class="sidebar-right">
+<div class="p-4 border-b border-slate-200 flex items-center justify-between bg-white">
+<h3 class="font-bold text-slate-800 flex items-center gap-2">
+                    可追溯异常
+                    <span class="bg-orange-500 text-white text-[10px] px-1.5 py-0.5 rounded-full">12</span>
+</h3>
+<button class="text-slate-400 hover:text-slate-600 transition-colors"><i class="fa-solid fa-rotate-right text-xs"></i></button>
+</div>
+<div class="flex-1 overflow-y-auto p-2">
+<!-- 分类：待处理项 -->
+<div class="mb-4">
+<div class="flex items-center justify-between px-2 mb-2">
+<span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">需核对异常 (4)</span>
+</div>
+<div class="problem-item problem-error p-3 rounded bg-slate-50 mb-1">
+<div class="flex justify-between items-start mb-1">
+<span class="status-pill pill-error">税价口径不一</span>
+<span class="text-[9px] text-slate-400">商品归组</span>
+</div>
+<p class="text-xs text-slate-700 font-medium">供应商含税/未税口径不一致，建议人工标记或转换</p>
+</div>
+<div class="problem-item problem-error p-3 rounded bg-slate-50 mb-1">
+<div class="flex justify-between items-start mb-1">
+<span class="status-pill pill-error">单位逻辑差异</span>
+<span class="text-[9px] text-slate-400">标准化</span>
+</div>
+<p class="text-xs text-slate-700 font-medium">发现“件”与“个”的单位映射冲突，可查看原文证据</p>
+</div>
+</div>
+<!-- 分类：低置信记录 -->
+<div class="mb-4">
+<div class="flex items-center justify-between px-2 mb-2">
+<span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">可追溯标记 (8)</span>
+</div>
+<div class="problem-item problem-warning p-3 rounded bg-slate-50 mb-1">
+<div class="flex justify-between items-start mb-1">
+<span class="status-pill pill-warning">智能推荐确认</span>
+<span class="text-[9px] text-slate-400">商品归组</span>
+</div>
+<p class="text-xs text-slate-700 font-medium">有 5 个高置信归组建议，标记后可进入下一阶段</p>
+</div>
+<div class="problem-item problem-warning p-3 rounded bg-slate-50 mb-1">
+<div class="flex justify-between items-start mb-1">
+<span class="status-pill pill-warning">识别置信度偏低</span>
+<span class="text-[9px] text-slate-400">标准化</span>
+</div>
+<p class="text-xs text-slate-700 font-medium">供应商 C 的规格型号识别率为 62%，建议抽检</p>
+</div>
+</div>
+</div>
+<div class="p-4 bg-white border-t border-slate-200">
+<div class="bg-blue-50 border border-blue-100 rounded p-3 flex items-start gap-3">
+<i class="fa-solid fa-circle-info text-blue-500 mt-0.5"></i>
+<p class="text-[11px] text-blue-700 leading-normal">
+                        当前存在可追溯异常。您可以先行切换阶段，但建议在生成最终比价报告前完成关键异常的<b>标记或核对</b>。
+                    </p>
+</div>
+</div>
+</aside>
+</main>
+<!-- 证据/追溯详情抽屉 (Evidence Drawer) -->
+<div class="evidence-drawer" id="evidenceDrawer">
+<div class="flex flex-col h-full">
+<div class="p-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+<h3 class="font-bold text-slate-800">证据与追溯详情</h3>
+<button class="text-slate-400 hover:text-slate-600" onclick="document.getElementById('evidenceDrawer').classList.remove('open')">
+<i class="fa-solid fa-xmark"></i>
+</button>
+</div>
+<div class="flex-1 overflow-y-auto p-5">
+<!-- 来源摘要 -->
+<div class="mb-6">
+<label class="text-[10px] font-bold text-slate-400 uppercase mb-2 block">数据来源</label>
+<div class="bg-slate-50 rounded border border-slate-200 p-3">
+<div class="flex items-center gap-2 mb-2">
+<i class="fa-solid fa-file-pdf text-red-500"></i>
+<span class="text-sm font-bold text-slate-800">报价单_联想科技_v2.pdf</span>
+</div>
+<div class="grid grid-cols-2 gap-y-2 text-xs">
+<span class="text-slate-500">供应商：</span><span class="text-slate-700">联想科技</span>
+<span class="text-slate-500">定位：</span><span class="text-slate-700 underline decoration-slate-300 cursor-pointer">第 4 页，表格 #2</span>
+<span class="text-slate-500">识别方式：</span><span class="text-slate-700">结构化提取 (L1)</span>
+<span class="text-slate-500">置信度：</span><span class="text-green-600 font-bold">98.5%</span>
+</div>
+</div>
+</div>
+<!-- 映射记录 -->
+<div class="mb-6">
+<label class="text-[10px] font-bold text-slate-400 uppercase mb-2 block">审计追踪</label>
+<div class="space-y-3">
+<div class="flex items-center justify-between text-xs p-2 bg-blue-50 rounded border border-blue-100">
+<div class="flex flex-col">
+<span class="text-slate-400 text-[9px]">原始文本</span>
+<span class="font-mono font-bold text-blue-800">Unit Price (Tax Inc.)</span>
+</div>
+<i class="fa-solid fa-arrow-right text-blue-300"></i>
+<div class="flex flex-col text-right">
+<span class="text-slate-400 text-[9px]">转换字段</span>
+<span class="font-bold text-blue-800">含税单价</span>
+</div>
+</div>
+<div class="text-[11px] text-slate-600 px-2">
+<i class="fa-solid fa-bolt text-yellow-500 mr-1"></i> 系统自动命中规则：<b>[Global] 英文报价词库</b>
+</div>
+</div>
+</div>
+</div>
+<div class="p-4 bg-slate-50 border-t border-slate-200">
+<button class="w-full py-2 bg-white border border-slate-300 rounded text-xs font-bold text-slate-700 hover:bg-slate-100 transition-colors">
+<i class="fa-solid fa-magnifying-glass mr-1"></i> 在源文件中查看原文
+                </button>
+</div>
+</div>
+</div>
+<script>
+        // 工作台交互逻辑
+        document.addEventListener('keydown', function(e) {
+            if (e.key === "Escape") {
+                document.getElementById('evidenceDrawer').classList.remove('open');
+            }
+        });
+    </script>
+</body></html>

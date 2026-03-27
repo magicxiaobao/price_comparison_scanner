@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>导入文件 - 三方比价支出依据扫描工具</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<style data-purpose="custom-scrollbar">
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f1f1;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #ccc;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #999;
+    }
+  </style>
+<style data-purpose="animations">
+    @keyframes spin-slow {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    .animate-spin-slow {
+      animation: spin-slow 3s linear infinite;
+    }
+  </style>
+</head>
+<body class="bg-gray-50 text-slate-800 font-sans antialiased">
+<!-- BEGIN: Workbench Wrapper -->
+<div class="min-h-screen flex flex-col">
+<!-- BEGIN: Top Navigation Bar -->
+<nav class="bg-white border-b border-gray-200 px-4 h-12 flex items-center justify-between sticky top-0 z-50">
+<div class="flex items-center space-x-4">
+<button class="p-1.5 hover:bg-gray-100 rounded-full transition-colors">
+<svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path d="M10 19l-7-7m0 0l7-7m-7 7h18" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+</button>
+<div class="flex items-center space-x-2">
+<p class="text-[11px] text-gray-400 font-medium">当前项目</p>
+<div class="h-3 w-[1px] bg-gray-200"></div>
+<h1 class="text-xs font-bold flex items-center">
+            2026Q1 办公设备采购比价
+            <svg class="w-3 h-3 ml-1 text-gray-400" fill="currentColor" viewbox="0 0 20 20"><path clip-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" fill-rule="evenodd"></path></svg>
+</h1>
+</div>
+</div>
+<div class="flex items-center space-x-2">
+<span class="flex items-center text-[10px] text-gray-400">
+<span class="w-1.5 h-1.5 bg-green-500 rounded-full mr-1"></span>
+          自动保存于 14:45
+        </span>
+<button class="px-2.5 py-1 text-[11px] border border-gray-300 rounded hover:bg-gray-50 font-medium">项目设置</button>
+<button class="px-2.5 py-1 text-[11px] bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center font-medium shadow-sm">
+<svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+          导出 Excel 审计底稿
+        </button>
+</div>
+</nav>
+<!-- END: Top Navigation Bar -->
+<!-- BEGIN: Stepper Navigation -->
+<div class="bg-white border-b border-gray-200 shadow-sm">
+<div class="max-w-7xl mx-auto flex items-center px-4 overflow-x-auto">
+<div class="flex items-center min-w-max">
+<div class="flex items-center py-2.5 border-b-2 border-blue-600 text-blue-600 px-5">
+<span class="w-4 h-4 rounded-full bg-blue-600 text-white flex items-center justify-center text-[10px] mr-2 font-bold italic">1</span>
+<span class="text-[11px] font-bold">1. 导入文件</span>
+</div>
+<div class="flex items-center py-2.5 text-gray-400 px-5 group hover:text-gray-600 transition-colors cursor-default">
+<span class="w-4 h-4 rounded-full border border-gray-300 flex items-center justify-center text-[10px] mr-2">2</span>
+<span class="text-[11px]">2. 标准化</span>
+</div>
+<div class="flex items-center py-2.5 text-gray-400 px-5">
+<span class="w-4 h-4 rounded-full border border-gray-300 flex items-center justify-center text-[10px] mr-2">3</span>
+<span class="text-[11px]">3. 商品归组</span>
+</div>
+<div class="flex items-center py-2.5 text-gray-400 px-5">
+<span class="w-4 h-4 rounded-full border border-gray-300 flex items-center justify-center text-[10px] mr-2">4</span>
+<span class="text-[11px]">4. 符合性审查</span>
+</div>
+<div class="flex items-center py-2.5 text-gray-400 px-5">
+<span class="w-4 h-4 rounded-full border border-gray-300 flex items-center justify-center text-[10px] mr-2">5</span>
+<span class="text-[11px]">5. 比价与导出</span>
+</div>
+</div>
+</div>
+</div>
+<!-- END: Stepper Navigation -->
+<!-- BEGIN: Main Content Area -->
+<main class="flex-1 flex overflow-hidden">
+<!-- BEGIN: Left Content Column -->
+<section class="flex-1 overflow-y-auto p-4 space-y-4">
+<!-- BEGIN: File Upload Dropzone -->
+<div class="border-2 border-dashed border-gray-200 rounded-lg bg-white p-8 text-center hover:border-blue-400 transition-colors group cursor-pointer" data-purpose="upload-area">
+<div class="mx-auto w-12 h-12 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
+<svg class="w-6 h-6" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+</div>
+<h3 class="text-sm font-bold text-gray-900">点击或拖拽报价文件至此处</h3>
+<p class="mt-1 text-[11px] text-gray-400">支持 PDF、Excel、Word 及图片格式 (JPG/PNG/TIFF)</p>
+<div class="mt-4 flex justify-center space-x-3">
+<button class="bg-blue-600 text-white px-4 py-1.5 rounded text-[11px] hover:bg-blue-700 font-bold shadow-sm">选择本地文件</button>
+<button class="bg-white border border-gray-300 px-4 py-1.5 rounded text-[11px] hover:bg-gray-50 text-gray-700 font-bold">从本地库导入</button>
+</div>
+</div>
+<!-- END: File Upload Dropzone -->
+<!-- BEGIN: File List Table -->
+<div class="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm" data-purpose="file-management">
+<div class="px-3 py-2 border-b border-gray-100 flex items-center justify-between bg-gray-50/30">
+<h4 class="text-[11px] font-bold text-gray-700">已上传文件 (4)</h4>
+<span class="text-[10px] text-gray-400 italic">系统将自动识别供应商及明细表格</span>
+</div>
+<table class="w-full text-left text-[11px] border-collapse">
+<thead class="bg-gray-50 text-gray-500 uppercase text-[10px] font-bold">
+<tr>
+<th class="px-3 py-2">文件名</th>
+<th class="px-3 py-2">供应商名称 (识别结果)</th>
+<th class="px-3 py-2 w-24">提取类型</th>
+<th class="px-3 py-2 w-32">状态</th>
+<th class="px-3 py-2 text-right w-16">操作</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-gray-100">
+<!-- Row 1: Success -->
+<tr class="hover:bg-blue-50/30 transition-colors">
+<td class="px-3 py-2">
+<div class="flex items-center">
+<svg class="w-4 h-4 text-green-600 mr-2" fill="currentColor" viewbox="0 0 20 20"><path clip-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A1 1 0 0111 2.414l4.586 4.586a1 1 0 01.293.707V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" fill-rule="evenodd"></path></svg>
+<span class="font-medium truncate max-w-xs">办公设备报价单_联想经销商A.pdf</span>
+</div>
+</td>
+<td class="px-3 py-2">
+<div class="flex items-center group">
+<input class="border-0 border-b border-transparent bg-transparent focus:ring-0 focus:border-blue-500 py-0 px-0 text-[11px] w-full" type="text" value="联想(北京)有限公司"/>
+<button class="ml-1 text-blue-600 opacity-0 group-hover:opacity-100"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg></button>
+</div>
+</td>
+<td class="px-3 py-2">
+<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-blue-100 text-blue-800 uppercase">Structured</span>
+</td>
+<td class="px-3 py-2 text-green-600 flex items-center font-bold">
+<svg class="w-3.5 h-3.5 mr-1" fill="currentColor" viewbox="0 0 20 20"><path clip-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" fill-rule="evenodd"></path></svg>
+                  解析成功
+                </td>
+<td class="px-3 py-2 text-right">
+<button class="text-gray-300 hover:text-red-600"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg></button>
+</td>
+</tr>
+<!-- Row 2: Parsing Progress -->
+<tr class="bg-gray-50/20">
+<td class="px-3 py-2">
+<div class="flex items-center">
+<svg class="w-4 h-4 text-amber-500 mr-2" fill="currentColor" viewbox="0 0 20 20"><path clip-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A1 1 0 0111 2.414l4.586 4.586a1 1 0 01.293.707V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" fill-rule="evenodd"></path></svg>
+<span>扫描件_HP_报价.jpg</span>
+</div>
+</td>
+<td class="px-3 py-2 text-gray-400 italic">正在识别...</td>
+<td class="px-3 py-2">
+<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-purple-100 text-purple-800 uppercase">OCR <span class="ml-1 text-[7px] px-1 bg-purple-200 rounded">EXP</span></span>
+</td>
+<td class="px-3 py-2">
+<div class="flex flex-col w-24">
+<div class="flex justify-between text-[9px] mb-0.5">
+<span class="text-blue-600 font-bold">解析中...</span>
+<span class="text-gray-500">65%</span>
+</div>
+<div class="w-full bg-gray-200 rounded-full h-1">
+<div class="bg-blue-500 h-1 rounded-full animate-pulse" style="width: 65%"></div>
+</div>
+</div>
+</td>
+<td class="px-3 py-2 text-right">
+<svg class="w-3.5 h-3.5 text-gray-300 animate-spin-slow inline" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+</td>
+</tr>
+<!-- Row 3: Failed -->
+<tr class="bg-red-50/20">
+<td class="px-3 py-2">
+<div class="flex items-center text-red-700">
+<svg class="w-4 h-4 mr-2" fill="currentColor" viewbox="0 0 20 20"><path clip-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A1 1 0 0111 2.414l4.586 4.586a1 1 0 01.293.707V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" fill-rule="evenodd"></path></svg>
+<span>采购明细单_DELL.docx</span>
+</div>
+</td>
+<td class="px-3 py-2 text-gray-400 italic">识别中断</td>
+<td class="px-3 py-2 text-gray-400">-</td>
+<td class="px-3 py-2 text-red-600 font-bold flex items-center">
+<svg class="w-3.5 h-3.5 mr-1" fill="currentColor" viewbox="0 0 20 20"><path clip-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" fill-rule="evenodd"></path></svg>
+                  解析失败
+                </td>
+<td class="px-3 py-2 text-right">
+<button class="text-blue-600 hover:underline text-[10px] font-bold mr-1.5">重试</button>
+<button class="text-gray-300 hover:text-red-600"><svg class="w-3.5 h-3.5 inline" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg></button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- END: File List Table -->
+<!-- BEGIN: Table Selection & Preview -->
+<div class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+<div class="flex items-center justify-between mb-3">
+<h4 class="text-[11px] font-bold text-gray-700 uppercase tracking-tight">数据范围确认</h4>
+<span class="text-[10px] text-amber-600 font-bold px-2 py-0.5 bg-amber-50 rounded border border-amber-100">请勾选需要参与比价的表格区域</span>
+</div>
+<div class="grid grid-cols-2 gap-3">
+<!-- Table Card 1 -->
+<div class="border border-blue-200 rounded-md p-2.5 relative bg-blue-50/20 group">
+<div class="absolute top-2.5 left-2.5 z-10">
+<input checked="" class="rounded text-blue-600 focus:ring-blue-500 h-3.5 w-3.5 cursor-pointer" type="checkbox"/>
+</div>
+<div class="ml-7">
+<p class="text-[10px] font-bold text-gray-900 mb-1.5 flex items-center justify-between">
+<span>表格 1: 联想报价主体 (14行 x 6列)</span>
+<span class="text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity">已识别为主数据</span>
+</p>
+<div class="overflow-hidden border border-gray-100 rounded bg-white shadow-inner">
+<img alt="Table Preview" class="w-full opacity-70 group-hover:opacity-100 transition-opacity" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDXO_0psi1z1uSBkrdJYEGQ9sru5_bgC-osiAHd_tiQrmOC7yLwDiIcO_c6HyJ2r-HbK5WN8xuF2tneX8T8L9apVEyp_dc7UzKHGRpGuJ9M8o85fRoRySVjXpT-Ld0F5LZk4JpbUzRdlYG1HT6hhRWLAzN7qIHDHI_KZ0p90Cuip0ckfIxZXG__ivKVdsz_PVOgk2pjAlH94LHQJwx1ZHUVY-M5fiHOwQZqFQxwgBpg3uyRmfeXSYmujjD5xU-pml8GUSuArlLOu3BC"/>
+</div>
+<div class="mt-1.5 flex justify-end">
+<button class="text-[9px] text-blue-600 font-bold hover:underline">查看全屏预览</button>
+</div>
+</div>
+</div>
+<!-- Table Card 2 -->
+<div class="border border-gray-200 rounded-md p-2.5 relative bg-gray-50/30 hover:bg-white transition-colors group">
+<div class="absolute top-2.5 left-2.5 z-10">
+<input class="rounded text-blue-600 focus:ring-blue-500 h-3.5 w-3.5 cursor-pointer" type="checkbox"/>
+</div>
+<div class="ml-7">
+<p class="text-[10px] font-bold text-gray-500 mb-1.5 group-hover:text-gray-700">表格 2: 售后服务条款 (非价格数据)</p>
+<div class="overflow-hidden border border-gray-100 rounded bg-white grayscale opacity-40 group-hover:opacity-60 transition-all">
+<img alt="Table Preview" class="w-full" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAZgiSEb8VZhsSyWTJPiHRBLSoaW35elLi8S7ci-FG3Rszv7NoHSS0VK_tsS9PCffiP1kpslSfYstWPnlEGOGuTac7a2QfVtcTMTQ7GKPPAt5gJnvj-m1kaJoQVI8k8Nm8MKKgnD4aWrXkT8yZhmTT6YiN-W-qZr-qgk9ngydZlBDaMH7zrcTZ8inQolI5S1NOebbsDhLVJWvlU9Z8UeoiVmMVbd5GfWEb7zx6BiShWq_mhqgge5fcYhuXSJwNhWukOoz56B13txz3Y"/>
+</div>
+<div class="mt-1.5 flex justify-end">
+<button class="text-[9px] text-blue-600 font-bold hover:underline">查看全屏预览</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- END: Table Selection & Preview -->
+</section>
+<!-- END: Left Content Column -->
+<!-- BEGIN: Right Sidebar -->
+<aside class="w-72 bg-white border-l border-gray-200 flex flex-col shadow-[-2px_0_10px_rgba(0,0,0,0.02)]">
+<!-- BEGIN: Pending Issues Header -->
+<div class="p-3 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+<div class="flex items-center space-x-1.5">
+<h2 class="font-bold text-[11px] text-gray-700 uppercase tracking-wider">待处理异常</h2>
+<span class="bg-red-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">3</span>
+</div>
+<button class="text-gray-400 hover:text-blue-600 transition-colors"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg></button>
+</div>
+<!-- END: Pending Issues Header -->
+<!-- BEGIN: Issues List -->
+<div class="flex-1 overflow-y-auto p-3 space-y-3">
+<div class="space-y-2">
+<h3 class="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">解析失败详情</h3>
+<!-- Issue Item: Parsing Failure -->
+<div class="bg-red-50/50 border-l-2 border-red-500 p-2.5 rounded-r border border-red-100">
+<div class="flex justify-between items-start mb-1.5">
+<span class="text-[9px] font-bold bg-red-100 text-red-700 px-1 rounded border border-red-200">解析异常</span>
+<span class="text-[9px] text-gray-400 font-mono">DELL.docx</span>
+</div>
+<p class="text-[11px] text-red-800 leading-relaxed mb-2.5">文档结构过载，无法自动识别表格边界。建议：</p>
+<div class="space-y-1.5">
+<button class="w-full py-1.5 text-[10px] bg-white border border-red-200 text-red-700 rounded hover:bg-red-100 font-bold transition-colors">手动复制粘贴数据</button>
+<button class="w-full py-1.5 text-[10px] bg-white border border-red-200 text-red-700 rounded hover:bg-red-100 font-bold transition-colors">重新导入为标准Excel</button>
+</div>
+</div>
+<!-- Issue Item: Confidence Warning -->
+<div class="bg-amber-50/50 border-l-2 border-amber-500 p-2.5 rounded-r border border-amber-100">
+<div class="flex justify-between items-start mb-1.5">
+<span class="text-[9px] font-bold bg-amber-100 text-amber-700 px-1 rounded border border-amber-200">置信度低</span>
+<span class="text-[9px] text-gray-400 font-mono">HP_报价.jpg</span>
+</div>
+<p class="text-[11px] text-amber-800 leading-relaxed">识别供应商名称 <span class="bg-amber-100 px-0.5 font-bold">"HP 打印机服务部"</span> 存在歧义，请手动确认供应商全称。</p>
+</div>
+</div>
+</div>
+<!-- END: Issues List -->
+<!-- BEGIN: Action Footer -->
+<div class="p-3 bg-gray-50 border-t border-gray-200">
+<div class="mb-3 bg-blue-50/50 rounded p-2.5 flex items-start space-x-2 border border-blue-100">
+<svg class="w-3.5 h-3.5 text-blue-500 mt-0.5 shrink-0" fill="currentColor" viewbox="0 0 20 20"><path clip-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" fill-rule="evenodd"></path></svg>
+<p class="text-[10px] text-blue-900 leading-normal">系统检测到部分异常，已在右侧清单列出。您可以现在处理，或继续进行下一步，异常将标注在最终底稿中。</p>
+</div>
+<button class="w-full bg-blue-600 text-white font-bold py-2 rounded text-[11px] hover:bg-blue-700 shadow-md transition-all active:translate-y-0.5 active:shadow-sm">下一步：进入标准化</button>
+</div>
+<!-- END: Action Footer -->
+</aside>
+<!-- END: Right Sidebar -->
+</main>
+<!-- END: Main Content Area -->
+</div>
+<!-- END: Workbench Wrapper -->
+</body></html>
