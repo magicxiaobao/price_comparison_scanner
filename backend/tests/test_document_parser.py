@@ -1,0 +1,110 @@
+from pathlib import Path
+
+import pytest
+
+
+@pytest.fixture
+def parser():
+    from engines.document_parser import DocumentParser
+
+    return DocumentParser()
+
+
+@pytest.fixture
+def sample_xlsx(tmp_path) -> Path:
+    """生成一个包含两个 sheet 的测试 Excel"""
+    import openpyxl
+
+    wb = openpyxl.Workbook()
+    # Sheet1: 有数据
+    ws1 = wb.active
+    ws1.title = "报价单"
+    ws1.append(["商品名称", "单价", "数量"])
+    ws1.append(["笔记本电脑", "4299", "50"])
+    ws1.append(["显示器", "1599", "30"])
+    # Sheet2: 空白
+    wb.create_sheet("空白页")
+    # Sheet3: 有数据
+    ws3 = wb.create_sheet("配件")
+    ws3.append(["品名", "价格"])
+    ws3.append(["键盘", "199"])
+
+    path = tmp_path / "test.xlsx"
+    wb.save(path)
+    return path
+
+
+@pytest.fixture
+def empty_xlsx(tmp_path) -> Path:
+    """生成一个完全空白的 Excel"""
+    import openpyxl
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "空白"
+    path = tmp_path / "empty.xlsx"
+    wb.save(path)
+    return path
+
+
+def test_parse_xlsx_basic(parser, sample_xlsx):
+    """解析含数据的 Excel → 跳过空 sheet，返回 2 个表格"""
+    results = parser.parse(str(sample_xlsx))
+    assert len(results) == 2
+
+    # 第一个表格
+    t1 = results[0]
+    assert t1.sheet_name == "报价单"
+    assert t1.headers == ["商品名称", "单价", "数量"]
+    assert t1.row_count == 2
+    assert t1.column_count == 3
+    assert t1.rows[0] == ["笔记本电脑", "4299", "50"]
+
+    # 第二个表格
+    t2 = results[1]
+    assert t2.sheet_name == "配件"
+    assert t2.row_count == 1
+
+
+def test_parse_xlsx_empty(parser, empty_xlsx):
+    """完全空白的 Excel → 返回空列表"""
+    results = parser.parse(str(empty_xlsx))
+    assert results == []
+
+
+def test_parse_xlsx_progress(parser, sample_xlsx):
+    """进度回调被正确调用"""
+    progress_values: list[float] = []
+    parser.parse(str(sample_xlsx), progress_callback=lambda p: progress_values.append(p))
+    assert len(progress_values) > 0
+    assert progress_values[-1] <= 1.0
+
+
+def test_parse_unsupported_type(parser, tmp_path):
+    """不支持的文件类型 → ValueError"""
+    path = tmp_path / "test.txt"
+    path.write_text("hello")
+    with pytest.raises(ValueError, match="不支持的文件类型"):
+        parser.parse(str(path))
+
+
+def test_parse_xlsx_none_cells(parser, tmp_path):
+    """含 None 单元格的 Excel → None 保留"""
+    import openpyxl
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.append(["A", "B", "C"])
+    ws.append(["x", None, "z"])
+    path = tmp_path / "sparse.xlsx"
+    wb.save(path)
+
+    results = parser.parse(str(path))
+    assert len(results) == 1
+    assert results[0].rows[0] == ["x", None, "z"]
+
+
+def test_is_ocr_available(parser):
+    """OCR 检测不崩溃"""
+    result = parser._is_ocr_available()
+    assert isinstance(result, bool)
