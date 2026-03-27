@@ -354,6 +354,7 @@ Leader（Claude Code 主进程）
    - `frontend-dev`：只能创建/修改 `frontend/`，**禁止操作 `backend/` 目录**
    - `reviewer`：只读审查，不修改任何源文件（除非被指派为修复任务的执行者）
    - 违反目录隔离时，git commit 会将其他 Agent 的工作混入错误的提交，导致任务边界失效和审计困难
+10. **门禁审查须附原始输出**：reviewer 在 gate 审查时，必须贴出门禁命令的完整原始输出（exit code + 通过数 + warning 数），不得概括、省略或转述。"环境问题"等判断必须附带实际错误信息。Leader 依据原始输出做放行决策。
 
 ### Agent Skill 分配与强制约束
 
