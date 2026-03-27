@@ -100,49 +100,58 @@ app_data/rules/
 | Task | 名称 | 负责人 | 依赖 |
 |------|------|--------|------|
 | 2.1 | AuditLogService 操作留痕 | backend-dev | Phase 1 |
-| 2.2 | RuleEngine — 规则加载/管理/冲突解决 | backend-dev | Phase 1 |
-| 2.3 | 规则管理 API（10 个端点） | backend-dev | 2.2 |
-| 2.4 | TableStandardizer — 字段映射 + 值标准化 | backend-dev | 2.2 |
+| 2.2 | RuleEngine — 规则加载/管理/冲突解决 | backend-dev | 2.6 |
+| 2.3 | 规则管理 API（10 个端点） | backend-dev | 2.2, 2.6 |
+| 2.4 | TableStandardizer — 字段映射 + 值标准化 | backend-dev | 2.2, 2.6 |
 | 2.5 | 标准化 API + 手工修正 API + 失效传播 | backend-dev | 2.1, 2.4, 2.6 |
 | 2.6 | 标准化相关 Pydantic 模型 | backend-dev | Phase 1 |
-| 2.7 | 前端 RuleManagement 页面 | frontend-dev | 2.3, 2.9 |
-| 2.8 | 前端 StandardizeStage — 预览 + 可编辑表格 + 手工修正 | frontend-dev | 2.5 |
-| 2.9 | 前端 RuleStore | frontend-dev | 2.3 |
-| 2.10 | 更新 openapi.json + reviewer 审查 | backend-dev | 2.5 |
+| 2.7 | 前端 RuleManagement 页面 | frontend-dev | 2.9, 2.10 |
+| 2.8 | 前端 StandardizeStage — 预览 + 可编辑表格 + 手工修正 | frontend-dev | 2.5, 2.9(弱), 2.10 |
+| 2.9 | 前端 RuleStore | frontend-dev | 2.3, 2.10 |
+| 2.10 | 更新 openapi.json + reviewer 审查 | backend-dev | 2.3, 2.5 |
 
 ### 依赖关系图
 
 ```
 Phase 1 完成
   │
-  ├── 2.1 AuditLogService ──────────────────────┐
-  │                                              │
-  ├── 2.2 RuleEngine ──┬── 2.3 规则 API ────┐   │
-  │                    │                    │   │
-  │                    └── 2.4 Standardizer─┼───┤
-  │                                         │   │
-  └── 2.6 Pydantic 模型 ───────────────────┘   │
-      (2.1/2.2/2.4 均依赖，可先行)              │
+  └── 2.6 Pydantic 模型 ─────────────────────────────────────┐
+      │                                                       │
+      ├── 2.1 AuditLogService ─────────────────────┐         │
+      │                                             │         │
+      └── 2.2 RuleEngine ──┬── 2.3 规则 API ───┐   │         │
+                            │                   │   │         │
+                            └── 2.4 Standardizer┼───┤         │
+                                                │   │         │
+                                                └───┘         │
+                                                │             │
+                                           2.5 标准化 API ────┘
                                                 │
-                                           2.5 标准化 API ── 2.10 openapi
-                                                │
-  ┌─────────────────────────────────────────────┤
-  │                                             │
-  2.9 RuleStore ──── 2.7 RuleManagement 页面    │
-       (依赖 2.3)         (依赖 2.3, 2.9)       │
-                                                │
-                                           2.8 StandardizeStage
-                                                (依赖 2.5)
+                                     ┌──────────┘
+                                     │
+                                2.10 openapi.json 生成 + 审查
+                                     │ （前端开工的契约基线）
+                                     │
+                          ┌──────────┼──────────┐
+                          │          │          │
+                     2.9 RuleStore   │          │
+                     (依赖 2.3,     │          │
+                      2.10)         │          │
+                          │          │          │
+                          ▼          │          │
+                   2.7 RuleManagement│     2.8 StandardizeStage
+                   (依赖 2.9, 2.10) │     (依赖 2.5, 2.10)
 ```
 
 ### 并行化机会
 
-- **第一波（并行）：** 2.1（AuditLog）+ 2.2（RuleEngine）+ 2.6（Pydantic 模型）— 三者仅依赖 Phase 1，互相独立
-- **第二波（并行）：** 2.3（规则 API，依赖 2.2）+ 2.4（Standardizer，依赖 2.2）— 两者仅依赖 2.2
-- **第三波：** 2.5（标准化 API，依赖 2.1 + 2.4）
-- **第四波：** 2.9（RuleStore，依赖 2.3）— 前端状态管理基础
-- **第五波（并行）：** 2.7（RuleManagement 页面，依赖 2.9）+ 2.8（StandardizeStage，依赖 2.5）— 前端页面
-- **第六波：** 2.10（openapi + reviewer 审查）
+- **第一波：** 2.6（Pydantic 模型）— 无前置依赖，后端其他任务的类型基础
+- **第二波（并行）：** 2.1（AuditLog）+ 2.2（RuleEngine）— 均依赖 2.6
+- **第三波（并行）：** 2.3（规则 API，依赖 2.2）+ 2.4（Standardizer，依赖 2.2 + 2.6）
+- **第四波：** 2.5（标准化 API，依赖 2.1 + 2.4 + 2.6）
+- **第五波：** 2.10（openapi.json 生成 + reviewer 后端审查，依赖 2.3 + 2.5）— 前端开工的契约基线
+- **第六波：** 2.9（RuleStore，依赖 2.3 + 2.10）
+- **第七波（并行）：** 2.7（RuleManagement，依赖 2.9 + 2.10）+ 2.8（StandardizeStage，依赖 2.5 + 2.10）
 
 ---
 

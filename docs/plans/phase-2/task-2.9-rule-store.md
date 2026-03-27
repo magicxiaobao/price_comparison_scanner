@@ -90,12 +90,7 @@ const useRuleStore = create<RuleStore>((set, get) => ({
     }
   },
 
-  addRule: async (rule) => {
-    await api.upsertRule(rule);
-    await get().loadRules();
-  },
-
-  updateRule: async (rule) => {
+  upsertRule: async (rule) => {
     await api.upsertRule(rule);
     await get().loadRules();
   },
