@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { confirmSupplier } from "../../lib/api";
 
 interface SupplierConfirmDialogProps {
@@ -23,6 +23,10 @@ export function SupplierConfirmDialog({
   const [name, setName] = useState(suggestedName);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setName(suggestedName);
+  }, [suggestedName]);
 
   if (!open) return null;
 
