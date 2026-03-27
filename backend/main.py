@@ -4,6 +4,7 @@ from fastapi import FastAPI
 
 from api.health import router as health_router
 from api.middleware import SessionTokenMiddleware
+from api.projects import router as projects_router
 from config import settings
 
 app = FastAPI(
@@ -16,6 +17,7 @@ app.add_middleware(SessionTokenMiddleware)
 
 # 路由注册
 app.include_router(health_router, prefix="/api")
+app.include_router(projects_router, prefix="/api")
 
 # 注意：不添加 CORSMiddleware。开发模式下通过 Vite proxy 解决跨域。
 
