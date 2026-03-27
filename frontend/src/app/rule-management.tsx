@@ -6,6 +6,9 @@ import { RuleList } from "../components/rules/rule-list";
 import { RuleEditor } from "../components/rules/rule-editor";
 import { RuleTestPanel } from "../components/rules/rule-test-panel";
 import { ImportExportPanel } from "../components/rules/import-export-panel";
+import { Button } from "../components/ui/button";
+import { Separator } from "../components/ui/separator";
+import { Card } from "../components/ui/card";
 
 type SelectedRule = ColumnMappingRule | ValueNormalizationRule;
 
@@ -36,36 +39,44 @@ function RuleManagement() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-gray-50">
-      {/* 顶部标题栏 */}
-      <header className="flex items-center justify-between border-b border-gray-200 bg-white px-6 py-4">
-        <h1 className="text-xl font-bold text-gray-900">规则管理</h1>
-        <button
-          onClick={() => navigate("/")}
-          className="rounded-md border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-        >
-          返回首页
-        </button>
+    <div className="flex flex-col h-screen min-w-[1280px] bg-slate-50 font-sans overflow-hidden">
+      <header className="flex-none h-14 bg-white border-b border-slate-200 flex items-center justify-between px-6 shadow-sm z-10 transition-colors">
+        <div className="flex items-center gap-4">
+          <Button 
+            variant="ghost" size="sm"
+            onClick={() => navigate("/")}
+            className="text-slate-500 gap-2"
+          >
+            <span aria-hidden="true">&larr;</span> 返回首页
+          </Button>
+          <Separator orientation="vertical" className="h-4" />
+          <h1 className="text-sm font-semibold text-slate-900 tracking-wide flex items-center gap-2">
+            高级规则管理
+          </h1>
+        </div>
       </header>
 
-      {/* 主体 2 列布局 */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* 左栏: 规则列表 + 导入导出 */}
-        <div className="flex w-1/2 flex-col border-r border-gray-200 bg-white">
-          <div className="flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden p-6 gap-6 max-w-[1600px] w-full mx-auto">
+        <Card className="flex w-[400px] flex-col overflow-hidden shrink-0 border-slate-200 rounded-lg">
+          <div className="flex-1 overflow-hidden flex flex-col">
             <RuleList onSelectRule={handleSelectRule} onNewRule={handleNewRule} />
           </div>
-          <ImportExportPanel />
-        </div>
+          <div className="border-t border-slate-100 bg-slate-50/50 p-2">
+            <ImportExportPanel />
+          </div>
+        </Card>
 
-        {/* 右栏: 编辑器或测试面板 */}
-        <div className="w-1/2 bg-white">
+        <Card className="flex-1 overflow-hidden flex flex-col relative border-slate-200 rounded-lg">
           {isEditing ? (
-            <RuleEditor rule={selectedRule} onClose={handleCloseEditor} />
+            <div className="flex-1 overflow-y-auto">
+               <RuleEditor rule={selectedRule} onClose={handleCloseEditor} />
+            </div>
           ) : (
-            <RuleTestPanel />
+            <div className="flex-1 overflow-y-auto">
+               <RuleTestPanel />
+            </div>
           )}
-        </div>
+        </Card>
       </div>
     </div>
   );

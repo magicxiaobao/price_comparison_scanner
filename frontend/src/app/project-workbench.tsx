@@ -1,13 +1,23 @@
-import { useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import { useProjectStore } from "../stores/project-store";
 import { ImportStage } from "../components/stages/import-stage";
 import { StandardizeStage } from "../components/stages/standardize-stage";
+import { StageNavigation } from "../components/workbench/stage-navigation";
+import { StageDirtyBanner } from "../components/workbench/stage-dirty-banner";
+import { ProblemPanelShell } from "../components/workbench/problem-panel-shell";
+import { EvidenceDrawerShell } from "../components/workbench/evidence-drawer-shell";
+import { Button } from "../components/ui/button";
 
 function ProjectWorkbench() {
   const { id } = useParams<{ id: string }>();
-  const { loadProject, loadFiles, loadTables, files, tables } =
+  const navigate = useNavigate();
+  const { loadProject, loadFiles, loadTables, files, tables, currentProject } =
     useProjectStore();
+
+  const [currentStage, setCurrentStage] = useState<number | null>(null);
+  const [isProblemPanelOpen, setIsProblemPanelOpen] = useState(false);
+  const [isEvidenceDrawerOpen, setIsEvidenceDrawerOpen] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -17,21 +27,116 @@ function ProjectWorkbench() {
     }
   }, [id, loadProject, loadFiles, loadTables]);
 
-  if (!id) {
+  useEffect(() => {
+    if (currentProject?.stage_statuses && currentStage === null) {
+      const keys = ["import_status", "normalize_status", "grouping_status", "compliance_status", "comparison_status"] as const;
+      const statusMap = currentProject.stage_statuses;
+      
+      let targetStage: number;
+      const firstDirty = keys.findIndex(k => statusMap[k] === "dirty");
+      
+      if (firstDirty !== -1) {
+        targetStage = firstDirty;
+      } else {
+        const firstPending = keys.findIndex(k => statusMap[k] === "pending");
+        if (firstPending !== -1) {
+          targetStage = firstPending;
+        } else {
+          targetStage = 4;
+        }
+      }
+      setCurrentStage(targetStage);
+    }
+  }, [currentProject?.stage_statuses, currentStage]);
+
+  if (!id || currentStage === null) {
     return (
-      <div className="min-h-screen bg-gray-50 p-8">
-        <p className="text-red-500">项目 ID 缺失</p>
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-blue-600 border-r-transparent"></div>
       </div>
     );
   }
 
+  const isImportDirty = currentProject?.stage_statuses?.import_status === "dirty";
+  const isNormalizeDirty = currentProject?.stage_statuses?.normalize_status === "dirty";
+
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
-      <h1 className="text-xl font-bold">项目工作台</h1>
-      <div className="mt-6 space-y-8">
-        <ImportStage projectId={id} files={files} tables={tables} />
-        <StandardizeStage projectId={id} files={files} />
+    <div className="flex flex-col h-screen min-w-[1280px] bg-slate-50 overflow-hidden font-sans">
+      <header className="flex-none h-14 bg-[#1e293b] text-white flex items-center justify-between px-6 shadow-sm z-10 transition-colors">
+        <div className="flex items-center gap-4">
+          <Button 
+            variant="ghost" 
+            size="sm"
+            onClick={() => navigate("/")}
+            className="text-slate-400 hover:text-white hover:bg-slate-800 transition-colors flex items-center gap-1 text-sm font-medium h-8"
+          >
+            <span aria-hidden="true">&larr;</span> 返回控制台
+          </Button>
+          <div className="h-4 w-px bg-slate-700"></div>
+          <h1 className="text-sm font-semibold tracking-wide flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+            {currentProject?.name || "加载中..."}
+          </h1>
+        </div>
+        <div className="flex items-center gap-3">
+          <Button variant="outline" size="sm" className="h-8 text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700 border hover:text-white">
+            项目设置
+          </Button>
+        </div>
+      </header>
+
+      <div className="flex-none bg-white border-b border-slate-200 px-6 pt-3">
+        <StageNavigation
+          currentStage={currentStage}
+          onStageChange={setCurrentStage}
+          stageStatuses={currentProject?.stage_statuses}
+        />
       </div>
+
+      <div className="flex flex-1 overflow-hidden relative">
+        <main className="flex-1 flex flex-col min-w-0 bg-slate-50 relative">
+          <div className="flex-none px-6 pt-6">
+            {currentStage === 0 && isImportDirty && (
+              <StageDirtyBanner
+                stageName="导入凭证"
+                onRecalculate={() => {}}
+              />
+            )}
+            {currentStage === 1 && isNormalizeDirty && (
+              <StageDirtyBanner
+                stageName="数据标准化"
+                dirtyReason="由于数据文件变更，标准化结果已自动清空。请检查并重新应用清洗规则。"
+                onRecalculate={() => {}}
+              />
+            )}
+          </div>
+          
+          <div className="flex-1 overflow-y-auto px-6 pb-6 pt-2">
+            {currentStage === 0 && (
+              <ImportStage files={files || []} tables={tables || []} projectId={id} />
+            )}
+            {currentStage === 1 && (
+              <StandardizeStage files={files || []} projectId={id} />
+            )}
+            {currentStage > 1 && (
+              <div className="h-[400px] border-2 border-dashed border-slate-200 rounded-lg flex items-center justify-center text-slate-400 backdrop-blur-sm bg-white">
+                当前阶段 (ID: {currentStage}) 正在开发中...
+              </div>
+            )}
+          </div>
+        </main>
+
+        <ProblemPanelShell 
+          isOpen={isProblemPanelOpen} 
+          onOpenChange={setIsProblemPanelOpen}
+          problemCount={12}
+        />
+      </div>
+
+      <EvidenceDrawerShell 
+        isOpen={isEvidenceDrawerOpen} 
+        onClose={() => setIsEvidenceDrawerOpen(false)} 
+      />
     </div>
   );
 }
