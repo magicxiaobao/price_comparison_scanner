@@ -76,10 +76,35 @@ export async function cancelTask(taskId: string): Promise<void> {
   await client.delete(`/api/tasks/${taskId}`);
 }
 
+// ---- 供应商确认 API ----
+
+export async function confirmSupplier(
+  fileId: string,
+  supplierName: string,
+  projectId: string,
+): Promise<SupplierFile> {
+  const resp = await client.put<SupplierFile>(`/api/files/${fileId}/confirm-supplier`, {
+    supplier_name: supplierName,
+    project_id: projectId,
+  });
+  return resp.data;
+}
+
 // ---- 表格 API ----
 
 export async function listTables(projectId: string): Promise<RawTable[]> {
   const resp = await client.get<RawTable[]>(`/api/projects/${projectId}/tables`);
+  return resp.data;
+}
+
+export async function toggleTableSelection(
+  tableId: string,
+  projectId: string,
+): Promise<{ table_id: string; selected: boolean }> {
+  const resp = await client.put<{ table_id: string; selected: boolean }>(
+    `/api/tables/${tableId}/toggle-selection`,
+    { project_id: projectId },
+  );
   return resp.data;
 }
 
