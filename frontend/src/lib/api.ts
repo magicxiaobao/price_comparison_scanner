@@ -2,6 +2,13 @@ import axios from "axios";
 import type { ProjectSummary, ProjectDetail, CreateProjectRequest } from "../types/project";
 import type { SupplierFile, FileUploadResponse, RawTable } from "../types/file";
 import type { TaskInfo } from "../types/task";
+import type {
+  RuleSet,
+  RuleCreateUpdate,
+  TemplateInfo,
+  RuleTestResult,
+  RuleImportSummary,
+} from "../types/rule";
 
 /**
  * API 客户端。
@@ -105,6 +112,65 @@ export async function toggleTableSelection(
     `/api/tables/${tableId}/toggle-selection`,
     { project_id: projectId },
   );
+  return resp.data;
+}
+
+// ---- 规则管理 API ----
+
+export async function getRules(): Promise<RuleSet> {
+  const resp = await client.get<RuleSet>("/api/rules");
+  return resp.data;
+}
+
+export async function getTemplates(): Promise<TemplateInfo[]> {
+  const resp = await client.get<TemplateInfo[]>("/api/rules/templates");
+  return resp.data;
+}
+
+export async function upsertRule(rule: RuleCreateUpdate): Promise<RuleSet> {
+  const resp = await client.put<RuleSet>("/api/rules", rule);
+  return resp.data;
+}
+
+export async function deleteRule(ruleId: string): Promise<void> {
+  await client.delete(`/api/rules/${ruleId}`);
+}
+
+export async function toggleRule(ruleId: string): Promise<{ enabled: boolean }> {
+  const resp = await client.put<{ enabled: boolean }>(`/api/rules/${ruleId}/toggle`);
+  return resp.data;
+}
+
+export async function loadTemplate(templateId: string): Promise<RuleSet> {
+  const resp = await client.post<RuleSet>("/api/rules/load-template", { templateId });
+  return resp.data;
+}
+
+export async function resetDefault(): Promise<RuleSet> {
+  const resp = await client.post<RuleSet>("/api/rules/reset-default");
+  return resp.data;
+}
+
+export async function importRules(file: File, strategy?: string): Promise<RuleImportSummary> {
+  const formData = new FormData();
+  formData.append("file", file);
+  if (strategy) formData.append("strategy", strategy);
+  const resp = await client.post<RuleImportSummary>("/api/rules/import", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return resp.data;
+}
+
+export async function exportRules(): Promise<Blob> {
+  const resp = await client.get("/api/rules/export", { responseType: "blob" });
+  return resp.data as Blob;
+}
+
+export async function testRule(columnName: string, projectId?: string): Promise<RuleTestResult> {
+  const resp = await client.post<RuleTestResult>("/api/rules/test", {
+    columnName,
+    projectId: projectId ?? null,
+  });
   return resp.data;
 }
 
