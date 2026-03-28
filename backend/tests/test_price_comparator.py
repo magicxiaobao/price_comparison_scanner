@@ -74,7 +74,7 @@ class TestPriceComparator:
 
     def test_missing_required_field(self) -> None:
         group = {"id": "g1", "group_name": "test"}
-        rows = {
+        rows: dict[str, list[dict]] = {
             "sf1": [{"supplier_name": "A", "unit_price": 100, "unit": "台"}],
             "sf2": [{"supplier_name": "B", "unit_price": None, "unit": "台"}],
         }
@@ -93,7 +93,7 @@ class TestPriceComparator:
 
     def test_missing_suppliers_detected(self) -> None:
         group = {"id": "g1", "group_name": "test"}
-        rows = {
+        rows: dict[str, list[dict]] = {
             "sf1": [{"supplier_name": "A", "unit_price": 100, "unit": "台"}],
             "sf2": [{"supplier_name": "B", "unit_price": None, "unit": "台"}],
         }

@@ -2,13 +2,13 @@ import argparse
 
 from fastapi import FastAPI
 
-from api.files import router as files_router
 from api.compliance import router as compliance_router
+from api.files import router as files_router
 from api.grouping import router as grouping_router
-from api.requirements import router as requirements_router
 from api.health import router as health_router
 from api.middleware import SessionTokenMiddleware
 from api.projects import router as projects_router
+from api.requirements import router as requirements_router
 from api.rules import router as rules_router
 from api.standardization import router as standardization_router
 from api.tasks import router as tasks_router

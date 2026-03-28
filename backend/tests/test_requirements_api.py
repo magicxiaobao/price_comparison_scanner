@@ -29,7 +29,8 @@ async def client():  # type: ignore[no-untyped-def]
 async def project_id(client) -> str:  # type: ignore[no-untyped-def]
     resp = await client.post("/api/projects", json={"name": "测试项目"})
     assert resp.status_code == 200
-    return resp.json()["id"]
+    pid: str = resp.json()["id"]
+    return pid
 
 
 @pytest.fixture
@@ -40,7 +41,8 @@ async def first_req_id(client, project_id: str) -> str:  # type: ignore[no-untyp
               "expectedValue": "16", "operator": "gte"},
     )
     assert resp.status_code == 200
-    return resp.json()["id"]
+    rid: str = resp.json()["id"]
+    return rid
 
 
 class TestRequirementsAPI:
