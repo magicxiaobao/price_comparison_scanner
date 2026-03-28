@@ -36,47 +36,206 @@
 
 ### 新增
 
-| 文件 | 说明 |
-|------|------|
-| `frontend/src-tauri/src/main.rs` | 填充 sidecar 管理逻辑（Phase 0 仅为默认 Tauri 入口） |
-| `frontend/src/components/stage-navigation.tsx` | 阶段状态导航组件 |
-| `backend/api/shutdown.py` | `POST /api/shutdown` 优雅关闭路由 |
+| 文件 | 说明 | Task |
+|------|------|------|
+| `frontend/src-tauri/src/main.rs` | 填充 sidecar 管理逻辑（Phase 0 仅为默认 Tauri 入口） | 5.1a / 5.1b |
+| `backend/api/shutdown.py` | `POST /api/shutdown` 优雅关闭路由 | 5.1a |
+| `backend/tests/test_shutdown.py` | shutdown API 回归测试 | 5.1a |
+| `backend/tests/test_ocr_placeholder.py` | OCR 占位路径测试 | 5.3 |
+| `scripts/build.sh` | 一键打包脚本 | 5.5 |
 
 ### 修改
 
-| 文件 | 修改范围 |
-|------|----------|
-| `backend/main.py` | 注册 shutdown 路由 |
-| `frontend/src/app/project-workbench.tsx` | 集成阶段导航组件 |
-| `frontend/src-tauri/tauri.conf.json` | 确认 externalBin、CSP 配置正确 |
-| `docs/api/openapi.json` | 新增 shutdown 端点 |
+| 文件 | 修改范围 | Task |
+|------|----------|------|
+| `frontend/src-tauri/src/lib.rs` | sidecar 启动/管理逻辑（如在此文件中） | 5.1a / 5.1b |
+| `frontend/src/main.tsx` | 渲染前调用 `initApiConnection()` 接入启动链路 | 5.1a |
+| `frontend/src/lib/api.ts` | 新增 `initApiConnection()` + Tauri invoke 适配 | 5.1a |
+| `backend/main.py` | 注册 shutdown 路由 | 5.1a |
+| `frontend/src-tauri/tauri.conf.json` | 确认 externalBin、CSP 配置正确 | 5.1a |
+| `docs/api/openapi.json` | 新增 shutdown 端点 | 5.1a |
+| `backend/engines/document_parser.py` | 确认 OCR 占位逻辑，补充提示消息 | 5.3 |
+| `frontend/src/components/stages/import-stage.tsx` | OCR 未安装提示 UI | 5.3 |
+
+### 已完成（Phase 4 提前实现）
+
+| 文件 | 说明 |
+|------|------|
+| `frontend/src/components/workbench/stage-navigation.tsx` | 阶段状态导航组件（5.2 已完成） |
+| `frontend/src/components/workbench/stage-dirty-banner.tsx` | 失效提示横幅（5.2 已完成） |
+| `frontend/src/app/project-workbench.tsx` | 已集成阶段导航（5.2 已完成） |
 
 ---
 
 ## 任务列表与依赖关系
 
-| Task | 名称 | 负责人 | 依赖 |
-|------|------|--------|------|
-| 5.1 | Tauri Sidecar 集成（启动/监控/重启/端口/token/清理） | frontend-dev | Phase 4 |
-| 5.2 | 阶段状态导航 + 失效提示 UI | frontend-dev | Phase 4 |
-| 5.3 | OCR 接口占位验证 + 未安装时用户提示 | backend-dev | Phase 4 |
-| 5.4 | 端到端联调（5 套验收数据集） | reviewer | 5.1, 5.2, 5.3 |
-| 5.5 | 生产打包（PyInstaller + Tauri bundler） | frontend-dev + backend-dev | 5.4 |
-| 5.6 | 安装包验证 + 最终验收 | reviewer | 5.5 |
+> **拆分说明（2026-03-28）：** 原 Task 5.1 拆分为 5.1a（MVP）和 5.1b（Hardening）两层。5.1a 是 Phase 5 基座，5.1b 视稳定性反馈决定是否前置。Task 5.2（阶段导航 UI）已在 Phase 4 中提前完成。
+>
+> **工作流定性：** Phase 5 采用「基座先行 + 条件加固 + 串行验收」工作流。不使用 contract-first 作为主流程（Phase 5 瓶颈在进程生命周期、平台环境和打包链路，不在接口契约）。仅在 5.1a 的 `POST /api/shutdown` 和 `get_sidecar_info` 上做轻量局部契约先行。
+
+| Task | 名称 | 负责人 | 依赖 | 状态 |
+|------|------|--------|------|------|
+| 5.1a | Sidecar MVP（启动/端口/token/退出清理/前端初始化） | frontend-owner + backend-dev | Phase 4 | 待实现 |
+| 5.1b | Sidecar 加固（心跳/重启/安全模式/孤儿清理） | frontend-owner | 5.1a | **必须实施，仅排期条件化**（视 G1 后决定前置或后置） |
+| 5.2 | 阶段状态导航 + 失效提示 UI | — | Phase 4 | **已完成**（Phase 4 提前实现） |
+| 5.3 | OCR 接口占位验证 + 未安装时用户提示 | ocr-worker | Phase 4 | 部分完成，需补测试 + 前端提示 |
+| 5.4 | 端到端联调（5 套验收数据集） | reviewer + leader | 5.1a, 5.3 | 待实现 |
+| 5.5 | 生产打包（PyInstaller + Tauri bundler） | backend-dev + frontend-owner | 5.4 | 待实现 |
+| 5.6 | 安装包验证 + 最终验收 | reviewer + leader | 5.5 | 待实现 |
+
+---
+
+## 执行编排：基座先行 + 条件加固 + 串行验收
+
+### W0 基线确认（Leader + Reviewer）
+
+确认以下前提条件：
+- 5.2 已完成，从执行路径剔除
+- 5.1a 为当前首要执行依据
+- 5.1b 为条件任务，不默认进入 W1
+- 5.3 与 5.1a 可并行
+
+### W1 并行（基座 + OCR 收口）
+
+**frontend-owner**（Rust/Tauri 侧）：5.1a 的 Tauri 集成
+- `frontend/src-tauri/src/main.rs` + `lib.rs` — sidecar 启动/退出/invoke
+- `frontend/src/main.tsx` — 启动初始化接线
+- `frontend/src/lib/api.ts` — `initApiConnection()` + Tauri 模式适配
+
+**backend-dev**（Python 侧）：5.1a 的 shutdown API
+- `backend/api/shutdown.py` — 优雅关闭路由
+- `backend/main.py` — 注册路由
+- `backend/tests/test_shutdown.py` — 回归测试
+- `docs/api/openapi.json` — 契约更新
+
+**ocr-worker**：5.3 OCR 占位补完
+- `backend/engines/document_parser.py` — 确认 OCR 占位逻辑
+- `backend/tests/test_ocr_placeholder.py` — 新建测试
+- `frontend/src/components/stages/import-stage.tsx` — OCR 未安装提示 UI
+
+### G1 门禁审查（Reviewer）
+
+放行条件：
+- 5.1a 门禁全部通过（后端 `ruff + mypy + pytest`，前端 `lint + tsc`）
+- sidecar MVP 手工验证通过（启动 → 连接 → API 调用 → 退出清理）
+- 5.3 占位路径测试通过 + 前端提示 UI 可用
+- reviewer 必须贴完整门禁命令原始输出
+
+### W2 稳定性决策（Leader + Reviewer）
+
+判断是否在 5.4 之前插入 5.1b。
+
+**插入 5.1b 的条件**（任一命中即插入）：
+- `pnpm tauri dev` 下 sidecar 启动不稳（偶发超时）
+- 退出后残留进程
+- 端口占用恢复差
+- sidecar 偶发失联导致前端 API 报错
+
+**不前置 5.1b 的条件**：
+- 5.1a 已足够稳定支撑 E2E 全流程
+- 此时 5.1b 后置到 W4 之后（W4.5），仍须在 Phase 5 关闭前完成
+
+> **口径澄清：** 5.1b 是 Phase 5 的必须交付项（顶层目标包含心跳/重启/安全模式/孤儿清理），不是可选增强。W2 决策的是"前置还是后置"，不是"做还是不做"。若 W2 决定不前置，5.1b 在 W4 之后、W5 之前作为 W4.5 执行。
+
+### W3 条件波次（W2 决策为"前置"时执行）
+
+**frontend-owner**：5.1b Sidecar 加固
+- 心跳循环、自动重启、安全模式、孤儿进程清理
+- 前端事件监听（`sidecar-restarted` / `sidecar-safe-mode`）
+
+### W4.5 后置收口（W2 决策为"不前置"时，在 W4 完成后执行）
+
+**frontend-owner**：5.1b Sidecar 加固（同 W3 内容）
+- 此时 E2E 已验证基础稳定性，加固工作风险更低
+- 完成后由 reviewer 补充 5.1b 验收项，确认后再进入 W5
+
+### W4 端到端联调
+
+**reviewer**（主负责人）+ **leader**（协调）：5.4 E2E
+- Agent 准备：测试数据文件、验收脚本、检查表、结果模板
+- Agent 执行：dev 模式下可自动化的流程验证、日志收集
+- 人工确认：桌面端真实体验、UI/交互感受、最终结论
+
+### G2 联调门禁（Reviewer）
+
+放行条件：
+- DS-1 ~ DS-5 验证清单全部通过
+- 质量指标达标（映射命中率 ≥ 80%、归组无修改率 ≥ 90%、异常检出 100%、追溯完整 100%）
+- 性能指标达标
+- 综合验收报告已生成
+
+### W5 生产打包
+
+**backend-dev**：PyInstaller 打包 + sidecar 可执行文件自验证
+**frontend-owner**：Tauri bundler + `scripts/build.sh` + `tauri.conf.json` 确认
+
+### G3 打包门禁（Reviewer）
+
+放行条件：
+- sidecar 二进制可独立启动并响应 health API
+- Tauri 安装包产出成功（.dmg / .msi / .AppImage）
+- 安装包体积在合理范围（200-300 MB）
+- 产物路径和命名符合 spec
+
+### W6 最终验收
+
+**reviewer**（主负责人）+ **leader**（协调）：5.6
+- 安装包环境下完整流程验证
+- 46 项 PRD 第 10 节验收清单
+- 最终发布判定（PASS / CONDITIONAL PASS / FAIL）
+
+> W6 期间不并行其他功能任务，确保验收环境干净。
+
+---
+
+### 角色分配
+
+| 角色 | 职责范围 |
+|------|----------|
+| **leader** | 波次推进、5.1b 插入决策、最终发布口径协调 |
+| **frontend-owner** | Tauri/Rust 整合、前端启动接线、5.5 Tauri 打包链路 |
+| **backend-dev** | shutdown API、测试、PyInstaller 打包、sidecar 自验证 |
+| **ocr-worker** | 5.3 OCR 占位补完（Phase 5 最适合并行切出的小任务） |
+| **reviewer** | G1/G2/G3 门禁、5.4/5.6 主验收口径 |
+
+### 并行性约束
+
+**适合并行：**
+- 5.1a 的 Rust/Tauri 侧 与 Python shutdown 侧
+- 5.1a 与 5.3
+- 5.5 中 backend packaging 与 frontend bundling 准备
+
+**不适合并行：**
+- 5.4 / 5.5 / 5.6 必须严格串行
+- 5.1b 与 5.4 不应同时推进
+- W6 最终验收期间不混入功能开发
 
 ```
-      ┌── 5.1 Sidecar 集成 ──────┐
-      │                           │
-      ├── 5.2 阶段导航 UI ────────┤
-      │                           ├── 5.4 端到端联调 ── 5.5 生产打包 ── 5.6 最终验收
-      └── 5.3 OCR 占位验证 ───────┘
-```
+W0 基线确认
+ │
+W1 ┌── 5.1a (frontend-owner + backend-dev) ──┐
+   └── 5.3 (ocr-worker) ────────────────────┘
+ │
+G1 reviewer 门禁
+ │
+W2 稳定性决策 ── 前置 5.1b? ──┐
+ │                              │ 是
+W3 5.1b (frontend-owner)  ◄────┘
+ │                              │ 否（后置）
+W4 5.4 E2E (reviewer + leader) ◄┘
+ │
+G2 联调门禁
+ │
+W4.5 5.1b 后置收口 ◄── 仅当 W2 决策为"不前置"时执行
+ │
+W5 5.5 打包 (backend-dev + frontend-owner)
+ │
+G3 打包门禁
+ │
+W6 5.6 最终验收 (reviewer + leader)
 
-**并行化：**
-- 5.1（Sidecar 集成）、5.2（阶段导航 UI）、5.3（OCR 占位验证）三者完全并行
-- 5.4 等待 5.1 + 5.2 + 5.3 全部完成
-- 5.5 等待 5.4 完成
-- 5.6 等待 5.5 完成
+注：无论走 W3 还是 W4.5，5.1b 都在 W5 之前完成
+```
 
 ---
 
@@ -128,11 +287,16 @@
 
 ### Sidecar 验收
 
+**5.1a-MVP（必须通过）：**
 - sidecar 可正常启动并响应 health API
+- 端口冲突时自动使用下一个可用端口
+- 前端通过 invoke 获取 port/token 并正常调用后端 API
+- 正常退出时进程清理完成 + PID 文件删除
+
+**5.1b-Hardening（视实施情况验收）：**
 - 心跳检测正常工作
 - sidecar 崩溃后自动重启
 - 连续崩溃进入安全模式
-- 正常退出时进程清理完成
 - 异常退出后下次启动能清理孤儿进程
 
 ### 打包验收
@@ -154,8 +318,10 @@
 ## 各 Task 的 task-spec
 
 见同目录下的独立文件：
-- `task-5.1-tauri-sidecar.md`
-- `task-5.2-stage-navigation.md`
+- `task-5.1-tauri-sidecar.md`（原始全量 spec，保留供参考）
+- `task-5.1a-sidecar-mvp.md`（**执行依据** — MVP 层）
+- `task-5.1b-sidecar-hardening.md`（**执行依据** — 加固层）
+- `task-5.2-stage-navigation.md`（已完成）
 - `task-5.3-ocr-placeholder.md`
 - `task-5.4-e2e-testing.md`
 - `task-5.5-production-build.md`
