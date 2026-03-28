@@ -222,10 +222,14 @@ class DocumentParser:
         except ImportError:
             return False
 
-    def _fallback_ocr(
-        self, file_path: str, progress_callback: Callable[[float], None] | None = None
-    ) -> list[RawTableData]:
-        """OCR 降级解析 — Phase 5 实现，当前返回空列表 + 提示"""
+    def _fallback_ocr(self, file_path: str) -> dict:
+        """OCR 降级处理。当 L1 结构化提取失败时调用。"""
         if not self._is_ocr_available():
-            return []
+            return {
+                "success": False,
+                "error_code": "OCR_NOT_INSTALLED",
+                "message": "OCR 扩展未安装。请安装 OCR 扩展包以支持扫描版 PDF 解析，"
+                "或将文件内容手动复制到 Excel 后重新导入。",
+                "tables": [],
+            }
         raise NotImplementedError("OCR 解析尚未实现")

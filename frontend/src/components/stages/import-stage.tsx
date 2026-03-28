@@ -304,8 +304,21 @@ function FileRow({
         </div>
       )}
 
-      {/* 错误信息 */}
-      {tracker?.error && (
+      {/* OCR 未安装提示 */}
+      {tracker?.error && tracker.error.includes("OCR") && (
+        <div className="mt-2 rounded-md bg-blue-50 p-3 text-sm text-blue-800">
+          <p className="font-medium">OCR 扩展未安装</p>
+          <p className="mt-1 text-xs text-blue-700">
+            当前文件为扫描版 PDF，需要 OCR 扩展才能自动识别表格内容。
+          </p>
+          <p className="mt-1 text-xs text-blue-600">
+            建议：请将文件内容手动复制到 Excel 后重新导入。
+          </p>
+        </div>
+      )}
+
+      {/* 其他错误信息 */}
+      {tracker?.error && !tracker.error.includes("OCR") && (
         <p className="mt-2 text-xs text-red-600">{tracker.error}</p>
       )}
     </div>
