@@ -112,6 +112,23 @@ with open('../docs/api/openapi.json', 'w') as f:
 
 后端与前端通过 `docs/api/openapi.json` 作为接口契约，由 MCP 服务实时提供给 Agent 查询。
 
+### 可选工作流：API Contract-First
+
+仓库支持 **API Contract-First** 作为可选开发工作流，用于前后端并行价值较高、页面/交互复杂、后端真实实现较重但接口形状可以先稳定定义的场景。
+
+- 默认仍使用当前常规工作流（后端实现 → 生成 openapi.json → 前端接入）
+- 只有当某个 `phase-spec`、任务编排文档或 Leader 指令**明确声明启用**时，Agent 才切换到 API Contract-First
+- 未明确声明时，Agent 不得自行假定当前 Phase 使用该工作流
+
+详细规则见：`docs/design/api-contract-first-workflow.md`
+
+启用后必须满足以下要求：
+
+- `docs/api/openapi.json` 是前端正式开工 gate
+- frontend-dev 实现 API 调用前必须通过 MCP 查询契约，不得凭猜测编码
+- mock 必须使用真实路由和真实请求/响应结构，不允许另起一套假接口
+- 真实实现替换 mock 时，不得静默修改契约；如需改契约，必须先更新 spec 并重新评审
+
 ### 工作原理
 
 ```
