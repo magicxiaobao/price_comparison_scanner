@@ -1,3 +1,4 @@
+import logging
 import os
 from pathlib import Path
 
@@ -24,3 +25,25 @@ def get_app_data_dir() -> Path:
 def get_global_config_path() -> Path:
     """获取全局配置文件路径"""
     return get_app_data_dir() / "config.json"
+
+
+def setup_error_logger() -> logging.Logger:
+    """配置错误日志，写入 {APP_DATA_DIR}/logs/error.log"""
+    log_dir = get_app_data_dir() / "logs"
+    log_dir.mkdir(parents=True, exist_ok=True)
+    log_path = log_dir / "error.log"
+
+    logger = logging.getLogger("price-comparison-error")
+    if not logger.handlers:
+        handler = logging.FileHandler(log_path, encoding="utf-8")
+        handler.setLevel(logging.ERROR)
+        handler.setFormatter(logging.Formatter(
+            "%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+            datefmt="%Y-%m-%d %H:%M:%S",
+        ))
+        logger.addHandler(handler)
+        logger.setLevel(logging.ERROR)
+    return logger
+
+
+error_logger = setup_error_logger()

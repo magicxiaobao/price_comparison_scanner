@@ -24,7 +24,11 @@ app = FastAPI(
     version="0.1.0",
 )
 
-# 中间件注册（CORS 必须在 SessionToken 之前，以处理 preflight 请求）
+# 中间件注册
+# 注意：FastAPI 中间件执行顺序与添加顺序相反（后添加的先执行）
+# SessionTokenMiddleware 先添加（内层），CORSMiddleware 后添加（外层先执行）
+# 这样 CORS 先处理 OPTIONS preflight，再由 SessionToken 校验实际请求
+app.add_middleware(SessionTokenMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -36,7 +40,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-app.add_middleware(SessionTokenMiddleware)
 
 # 路由注册
 app.include_router(health_router, prefix="/api")
