@@ -87,6 +87,7 @@ class ProblemService:
                 type="unit_mismatch",
                 label="单位不一致异常",
                 stage="comparison",
+                severity="error",
                 count=len(items),
                 items=items,
             ))
@@ -98,6 +99,7 @@ class ProblemService:
                 type="tax_basis_mismatch",
                 label="税价口径异常",
                 stage="comparison",
+                severity="error",
                 count=len(items),
                 items=items,
             ))
