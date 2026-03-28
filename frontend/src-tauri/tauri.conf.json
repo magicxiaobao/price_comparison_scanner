@@ -18,7 +18,7 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self'; connect-src 'self' http://127.0.0.1:17396 http://127.0.0.1:17397 http://127.0.0.1:17398 http://127.0.0.1:17399 http://127.0.0.1:17400 http://127.0.0.1:17401 http://127.0.0.1:17402 http://127.0.0.1:17403 http://127.0.0.1:17404 http://127.0.0.1:17405 http://127.0.0.1:17406; style-src 'self' 'unsafe-inline'; img-src 'self' data:"
+      "csp": null
     }
   },
   "bundle": {
