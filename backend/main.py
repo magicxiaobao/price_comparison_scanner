@@ -3,6 +3,7 @@ import argparse
 from fastapi import FastAPI
 
 from api.files import router as files_router
+from api.compliance import router as compliance_router
 from api.grouping import router as grouping_router
 from api.requirements import router as requirements_router
 from api.health import router as health_router
@@ -30,6 +31,7 @@ app.include_router(rules_router, prefix="/api")
 app.include_router(standardization_router, prefix="/api")
 app.include_router(grouping_router, prefix="/api")
 app.include_router(requirements_router, prefix="/api")
+app.include_router(compliance_router, prefix="/api")
 
 # 注意：不添加 CORSMiddleware。开发模式下通过 Vite proxy 解决跨域。
 
