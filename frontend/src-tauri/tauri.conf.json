@@ -14,7 +14,8 @@
       {
         "title": "三方比价支出依据扫描工具",
         "width": 1280,
-        "height": 800
+        "height": 800,
+        "useHttpsScheme": false
       }
     ],
     "security": {
