@@ -50,6 +50,26 @@ export function GroupingStage({ projectId }: GroupingStageProps) {
   };
 
   const handleConfirmGroup = (groupId: string) => handleAction(() => confirmGroup(groupId, projectId));
+
+  const candidateGroups = groups.filter(g => g.status === "candidate");
+
+  const handleConfirmAll = async () => {
+    if (candidateGroups.length === 0) return;
+    try {
+      setIsMoving(true);
+      setDragError(null);
+      for (const g of candidateGroups) {
+        await confirmGroup(g.id, projectId);
+      }
+      await loadGroups(projectId);
+      await useProjectStore.getState().loadProject(projectId);
+    } catch (err) {
+      console.error("Confirm all failed:", err);
+      setDragError(err instanceof Error ? err.message : "批量确认失败，请重试");
+    } finally {
+      setIsMoving(false);
+    }
+  };
   
   const handleMarkNotComparable = (groupId: string) => {
     setNotComparableConfirmGroup(groupId);
@@ -174,6 +194,9 @@ export function GroupingStage({ projectId }: GroupingStageProps) {
             <span className="text-xs font-medium text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full">{groups.length} 组</span>
           </h3>
           <div className="flex items-center gap-2">
+            {candidateGroups.length > 0 && (
+              <Button variant="default" size="sm" className="h-7 text-xs bg-emerald-600 hover:bg-emerald-700" onClick={handleConfirmAll} disabled={isMoving || isGenerating}>一键确认全部 ({candidateGroups.length})</Button>
+            )}
             {selectedGroupIds.length >= 2 && (
               <Button variant="default" size="sm" className="h-7 text-xs bg-blue-600 hover:bg-blue-700" onClick={handleMergeSelected} disabled={isMoving || isGenerating}>合并选中 ({selectedGroupIds.length})</Button>
             )}
