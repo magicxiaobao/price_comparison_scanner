@@ -41,6 +41,13 @@ struct SidecarRestartedPayload {
     port: u16,
 }
 
+#[derive(Serialize, Clone)]
+struct SidecarProgress {
+    step: String,
+    message: String,
+    progress: u32,      // 0-100
+}
+
 fn timestamp_str() -> String {
     let secs = SystemTime::now()
         .duration_since(SystemTime::UNIX_EPOCH)
@@ -156,6 +163,12 @@ fn start_sidecar_with<R: Runtime>(
     let app_data = app.path().app_data_dir().unwrap_or_default();
     sidecar_log(&app_data, &format!("start_sidecar_with: creating command, port={}", port));
 
+    let _ = app.emit("sidecar-progress", SidecarProgress {
+        step: "spawning".into(),
+        message: "正在启动后端服务...".into(),
+        progress: 5,
+    });
+
     let (mut rx, child) = app
         .shell()
         .sidecar("backend")
@@ -173,6 +186,12 @@ fn start_sidecar_with<R: Runtime>(
 
     let pid = child.pid();
     sidecar_log(&app_data, &format!("start_sidecar_with: spawned pid={}", pid));
+
+    let _ = app.emit("sidecar-progress", SidecarProgress {
+        step: "spawned".into(),
+        message: format!("后端进程已启动 (PID:{})，正在加载资源...", pid),
+        progress: 10,
+    });
 
     // Write PID file
     if let Some(app_data_dir) = app.path().app_data_dir().ok() {
@@ -207,7 +226,7 @@ fn start_sidecar_with<R: Runtime>(
         }
     });
 
-    // Wait for health check (up to 20 seconds, polling every 500ms)
+    // Wait for health check (up to 60 seconds, polling every 500ms)
     let health_url = format!("http://127.0.0.1:{}/api/health", port);
     let health_token = format!("Bearer {}", token);
 
@@ -216,16 +235,29 @@ fn start_sidecar_with<R: Runtime>(
         .build()
         .map_err(|e| format!("创建 tokio runtime 失败: {}", e))?;
 
-    sidecar_log(&app_data, "start_sidecar_with: starting health check (max 20s)");
+    sidecar_log(&app_data, "start_sidecar_with: starting health check (max 60s)");
 
+    let app_for_progress = app.clone();
     let ready = rt.block_on(async {
         let client = reqwest::Client::builder()
             .timeout(Duration::from_secs(2))
             .build()
             .unwrap();
 
-        for i in 0..40 {
+        for i in 0..120 {
             tokio::time::sleep(Duration::from_millis(500)).await;
+
+            // 每 2 秒更新一次进度 (每 4 次轮询)
+            if i % 4 == 0 {
+                let elapsed_secs = (i + 1) / 2;
+                let progress = 10 + (elapsed_secs as u32 * 90 / 60).min(85); // 10% → 95%
+                let _ = app_for_progress.emit("sidecar-progress", SidecarProgress {
+                    step: "health_check".into(),
+                    message: format!("等待服务就绪... ({}s/60s)", elapsed_secs),
+                    progress,
+                });
+            }
+
             match client
                 .get(&health_url)
                 .header("Authorization", &health_token)
@@ -234,13 +266,18 @@ fn start_sidecar_with<R: Runtime>(
             {
                 Ok(resp) if resp.status().is_success() => {
                     eprintln!("[sidecar] health check passed on attempt {}", i + 1);
+                    let _ = app_for_progress.emit("sidecar-progress", SidecarProgress {
+                        step: "ready".into(),
+                        message: "后端服务已就绪！".into(),
+                        progress: 100,
+                    });
                     return true;
                 }
                 Ok(resp) => {
                     eprintln!("[sidecar] health check attempt {}: status {}", i + 1, resp.status());
                 }
                 Err(e) => {
-                    if i % 5 == 4 {
+                    if i % 10 == 9 {
                         eprintln!("[sidecar] health check attempt {}: {}", i + 1, e);
                     }
                 }
@@ -250,8 +287,8 @@ fn start_sidecar_with<R: Runtime>(
     });
 
     if !ready {
-        sidecar_log(&app_data, "start_sidecar_with: health check timeout (20s)");
-        return Err("Sidecar 启动超时（20 秒内未响应 health API）".into());
+        sidecar_log(&app_data, "start_sidecar_with: health check timeout (60s)");
+        return Err("Sidecar 启动超时（60 秒内未响应 health API）".into());
     }
 
     sidecar_log(&app_data, "start_sidecar_with: health check passed");

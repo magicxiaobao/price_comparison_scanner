@@ -73,9 +73,9 @@ export async function initApiConnection(): Promise<void> {
   if (isTauri()) {
     const { invoke } = await import("@tauri-apps/api/core");
 
-    // 重试最多 30 次（每秒 1 次），等待异步 sidecar 启动完成
+    // 重试最多 65 次（每秒 1 次），等待异步 sidecar 启动完成（最长 ~65s）
     let lastError = "";
-    for (let i = 0; i < 30; i++) {
+    for (let i = 0; i < 65; i++) {
       try {
         const info = await invoke<SidecarInfo>("get_sidecar_info");
         configureTauriConnection(info.port, info.token);
