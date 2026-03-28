@@ -254,13 +254,13 @@ class GroupingService:
         members = [
             GroupMemberSummary(
                 standardized_row_id=m["standardized_row_id"],
-                supplier_name=m.get("supplier_name", ""),
-                product_name=m.get("product_name", ""),
-                spec_model=m.get("spec_model", ""),
-                unit=m.get("unit", ""),
+                supplier_name=m.get("supplier_name") or "",
+                product_name=m.get("product_name") or "",
+                spec_model=m.get("spec_model") or "",
+                unit=m.get("unit") or "",
                 unit_price=m.get("unit_price"),
                 quantity=m.get("quantity"),
-                confidence=m.get("confidence", 1.0),
+                confidence=m.get("confidence") or 1.0,
             )
             for m in members_data
         ]
