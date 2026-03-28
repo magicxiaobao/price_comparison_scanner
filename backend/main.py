@@ -1,6 +1,7 @@
 import argparse
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from api.comparison import router as comparison_router
 from api.compliance import router as compliance_router
@@ -23,7 +24,18 @@ app = FastAPI(
     version="0.1.0",
 )
 
-# 中间件注册
+# 中间件注册（CORS 必须在 SessionToken 之前，以处理 preflight 请求）
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "tauri://localhost",
+        "https://tauri.localhost",
+        "http://localhost:1420",
+        "http://localhost:5173",
+    ],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 app.add_middleware(SessionTokenMiddleware)
 
 # 路由注册
@@ -40,8 +52,6 @@ app.include_router(comparison_router, prefix="/api")
 app.include_router(export_router, prefix="/api")
 app.include_router(problems_router, prefix="/api")
 app.include_router(shutdown_router, prefix="/api")
-
-# 注意：不添加 CORSMiddleware。开发模式下通过 Vite proxy 解决跨域。
 
 if __name__ == "__main__":
     import uvicorn
