@@ -7,7 +7,7 @@ import { GroupingStage } from "../components/stages/grouping-stage";
 import { StageNavigation } from "../components/workbench/stage-navigation";
 import { useGroupingStore } from "../stores/grouping-store";
 import { StageDirtyBanner } from "../components/workbench/stage-dirty-banner";
-import { ProblemPanelShell } from "../components/workbench/problem-panel-shell";
+import { ProblemPanel } from "../components/stages/problem-panel";
 import { EvidenceDrawerShell } from "../components/workbench/evidence-drawer-shell";
 import { Button } from "../components/ui/button";
 
@@ -63,6 +63,8 @@ function ProjectWorkbench() {
   const isImportDirty = currentProject?.stage_statuses?.import_status === "dirty";
   const isNormalizeDirty = currentProject?.stage_statuses?.normalize_status === "dirty";
   const isGroupingDirty = currentProject?.stage_statuses?.grouping_status === "dirty";
+  const isComplianceDirty = currentProject?.stage_statuses?.compliance_status === "dirty";
+  const isComparisonDirty = currentProject?.stage_statuses?.comparison_status === "dirty";
 
   return (
     <div className="flex flex-col h-screen min-w-[1280px] bg-slate-50 overflow-hidden font-sans">
@@ -120,8 +122,22 @@ function ProjectWorkbench() {
                 onRecalculate={() => id && generateGrouping(id)}
               />
             )}
+            {currentStage === 3 && isComplianceDirty && (
+              <StageDirtyBanner
+                stageName="符合性审查"
+                dirtyReason="由于上游数据变更，符合性匹配结果可能受影响，建议重新执行匹配。"
+                onRecalculate={() => {}}
+              />
+            )}
+            {currentStage === 4 && isComparisonDirty && (
+              <StageDirtyBanner
+                stageName="比价分析"
+                dirtyReason="由于上游数据变更，比价结果可能受影响，建议重新生成。"
+                onRecalculate={() => {}}
+              />
+            )}
           </div>
-          
+
           <div className="flex-1 overflow-y-auto px-6 pb-6 pt-2">
             {currentStage === 0 && (
               <ImportStage files={files || []} tables={tables || []} projectId={id} />
@@ -132,18 +148,24 @@ function ProjectWorkbench() {
             {currentStage === 2 && (
               <GroupingStage projectId={id} />
             )}
-            {currentStage > 2 && (
+            {currentStage === 3 && (
               <div className="h-[400px] border-2 border-dashed border-slate-200 rounded-lg flex items-center justify-center text-slate-400 backdrop-blur-sm bg-white">
-                当前阶段 (ID: {currentStage}) 正在开发中...
+                符合性审查阶段 — 等待组件接入
+              </div>
+            )}
+            {currentStage === 4 && (
+              <div className="h-[400px] border-2 border-dashed border-slate-200 rounded-lg flex items-center justify-center text-slate-400 backdrop-blur-sm bg-white">
+                比价分析阶段 — 等待组件接入
               </div>
             )}
           </div>
         </main>
 
-        <ProblemPanelShell 
-          isOpen={isProblemPanelOpen} 
+        <ProblemPanel
+          projectId={id}
+          isOpen={isProblemPanelOpen}
           onOpenChange={setIsProblemPanelOpen}
-          problemCount={12}
+          onNavigateStage={setCurrentStage}
         />
       </div>
 

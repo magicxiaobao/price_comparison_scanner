@@ -22,6 +22,15 @@ import type {
   ColumnMappingInfo,
   FieldModifyResponse,
 } from "../types/standardization";
+import type {
+  RequirementItem,
+  RequirementCreate,
+  RequirementUpdate,
+  RequirementImportResult,
+  ComplianceMatrix,
+} from "../types/compliance";
+import type { ComparisonResult } from "../types/comparison";
+import type { ProblemGroup } from "../types/problem";
 
 /**
  * API 客户端。
@@ -264,6 +273,154 @@ export async function markNotComparable(groupId: string, projectId: string): Pro
 
 export async function moveMember(groupId: string, projectId: string, targetGroupId: string, rowId: string): Promise<GroupMoveMemberResponse> {
   const resp = await client.put<GroupMoveMemberResponse>(`/api/groups/${groupId}/move-member`, { projectId, targetGroupId, rowId });
+  return resp.data;
+}
+
+// ---- 需求标准 API ----
+
+export async function createRequirement(
+  projectId: string,
+  data: RequirementCreate,
+): Promise<RequirementItem> {
+  const resp = await client.post<RequirementItem>(
+    `/api/projects/${projectId}/requirements`,
+    data,
+  );
+  return resp.data;
+}
+
+export async function listRequirements(
+  projectId: string,
+): Promise<RequirementItem[]> {
+  const resp = await client.get<RequirementItem[]>(
+    `/api/projects/${projectId}/requirements`,
+  );
+  return resp.data;
+}
+
+export async function updateRequirement(
+  reqId: string,
+  data: RequirementUpdate,
+): Promise<RequirementItem> {
+  const resp = await client.put<RequirementItem>(
+    `/api/requirements/${reqId}`,
+    data,
+  );
+  return resp.data;
+}
+
+export async function deleteRequirement(
+  reqId: string,
+  projectId: string,
+): Promise<void> {
+  await client.delete(`/api/requirements/${reqId}`, {
+    params: { project_id: projectId },
+  });
+}
+
+export async function importRequirements(
+  projectId: string,
+  file: File,
+): Promise<RequirementImportResult> {
+  const formData = new FormData();
+  formData.append("file", file);
+  const resp = await client.post<RequirementImportResult>(
+    `/api/projects/${projectId}/requirements/import`,
+    formData,
+    { headers: { "Content-Type": "multipart/form-data" } },
+  );
+  return resp.data;
+}
+
+export async function exportRequirements(projectId: string): Promise<Blob> {
+  const resp = await client.get(
+    `/api/projects/${projectId}/requirements/export`,
+    { responseType: "blob" },
+  );
+  return resp.data as Blob;
+}
+
+// ---- 符合性审查 API ----
+
+export async function evaluateCompliance(
+  projectId: string,
+): Promise<{ taskId: string }> {
+  const resp = await client.post<{ taskId: string }>(
+    `/api/projects/${projectId}/compliance/evaluate`,
+  );
+  return resp.data;
+}
+
+export async function getComplianceMatrix(
+  projectId: string,
+): Promise<ComplianceMatrix> {
+  const resp = await client.get<ComplianceMatrix>(
+    `/api/projects/${projectId}/compliance/matrix`,
+  );
+  return resp.data;
+}
+
+export async function confirmMatch(
+  matchId: string,
+  projectId: string,
+  status: string,
+): Promise<void> {
+  await client.put(`/api/compliance/${matchId}/confirm`, {
+    projectId,
+    status,
+  });
+}
+
+export async function acceptMatch(
+  matchId: string,
+  projectId: string,
+  isAcceptable: boolean,
+): Promise<void> {
+  await client.put(`/api/compliance/${matchId}/accept`, {
+    projectId,
+    isAcceptable,
+  });
+}
+
+// ---- 比价 API ----
+
+export async function generateComparison(
+  projectId: string,
+): Promise<{ taskId: string }> {
+  const resp = await client.post<{ taskId: string }>(
+    `/api/projects/${projectId}/comparison/generate`,
+  );
+  return resp.data;
+}
+
+export async function getComparison(
+  projectId: string,
+): Promise<ComparisonResult[]> {
+  const resp = await client.get<ComparisonResult[]>(
+    `/api/projects/${projectId}/comparison`,
+  );
+  return resp.data;
+}
+
+// ---- 导出 API ----
+
+export async function exportReport(
+  projectId: string,
+): Promise<{ taskId: string }> {
+  const resp = await client.post<{ taskId: string }>(
+    `/api/projects/${projectId}/export`,
+  );
+  return resp.data;
+}
+
+// ---- 问题清单 API ----
+
+export async function getProblems(
+  projectId: string,
+): Promise<ProblemGroup[]> {
+  const resp = await client.get<ProblemGroup[]>(
+    `/api/projects/${projectId}/problems`,
+  );
   return resp.data;
 }
 

@@ -2,6 +2,7 @@ import { create } from "zustand";
 import type { ProjectSummary, ProjectDetail } from "../types/project";
 import type { SupplierFile, RawTable } from "../types/file";
 import type { TaskInfo } from "../types/task";
+import type { ProblemGroup } from "../types/problem";
 import * as api from "../lib/api";
 
 interface ImportProgress {
@@ -35,6 +36,10 @@ interface ProjectStore {
   updateTaskStatus: (taskId: string, status: TaskInfo) => void;
   removeTask: (taskId: string) => void;
   importProgress: () => ImportProgress;
+
+  // === Phase 4 新增 ===
+  problems: ProblemGroup[];
+  refreshProblems: (projectId: string) => Promise<void>;
 }
 
 export const useProjectStore = create<ProjectStore>((set, get) => ({
@@ -70,7 +75,7 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
   },
 
   clearProject: () =>
-    set({ currentProject: null, files: [], tables: [], activeTasks: {} }),
+    set({ currentProject: null, files: [], tables: [], activeTasks: {}, problems: [] }),
 
   // === Phase 1 新增 ===
   files: [],
@@ -127,5 +132,17 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
       totalTables: tables.length,
       allConfirmed: files.length > 0 && confirmedFiles === files.length,
     };
+  },
+
+  // === Phase 4 新增 ===
+  problems: [],
+
+  refreshProblems: async (projectId: string) => {
+    try {
+      const problems = await api.getProblems(projectId);
+      set({ problems });
+    } catch {
+      set({ problems: [] });
+    }
   },
 }));
