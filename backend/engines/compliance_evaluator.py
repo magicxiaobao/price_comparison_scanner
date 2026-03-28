@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 
 
@@ -17,11 +18,152 @@ class ParsedRequirement:
     operator: str | None
 
 
-class ComplianceEvaluator:
-    """需求标准管理 + 供应商符合性匹配引擎（可选模块）
+@dataclass
+class MatchResult:
+    """单条匹配结果"""
 
-    本 Task 仅实现 CRUD + 导入导出部分，匹配逻辑在 Task 4.2。
-    """
+    status: str  # match / partial / no_match / unclear
+    match_score: float  # 0.0 - 1.0
+    evidence_text: str
+    evidence_location: str  # JSON 字符串
+    match_method: str  # keyword / numeric / manual
+    needs_review: bool
+
+
+class ComplianceEvaluator:
+    """需求标准管理 + 供应商符合性匹配引擎（可选模块）"""
+
+    ENGINE_VERSION = "compliance_evaluator:1.0"
+
+    # ---- 符合性匹配 ----
+
+    def evaluate_single(
+        self,
+        requirement: dict,
+        supplier_rows: list[dict],
+        supplier_file_id: str,
+    ) -> MatchResult:
+        """对单个「需求项 x 供应商（该商品组下的行）」执行匹配。"""
+        match_type = requirement["match_type"]
+
+        if match_type == "keyword":
+            return self._match_keyword(requirement, supplier_rows)
+        elif match_type == "numeric":
+            return self._match_numeric(requirement, supplier_rows)
+        else:  # manual
+            return MatchResult(
+                status="unclear",
+                match_score=0.0,
+                evidence_text="",
+                evidence_location="{}",
+                match_method="manual",
+                needs_review=True,
+            )
+
+    def _match_keyword(
+        self, requirement: dict, rows: list[dict]
+    ) -> MatchResult:
+        """keyword 匹配：在 spec_model / remark / product_name 中搜索关键词。"""
+        keyword = (requirement.get("expected_value") or "").strip()
+        if not keyword:
+            return MatchResult(
+                status="unclear",
+                match_score=0.0,
+                evidence_text="未设置关键词",
+                evidence_location="{}",
+                match_method="keyword",
+                needs_review=True,
+            )
+
+        search_fields = ["spec_model", "remark", "product_name"]
+        for row in rows:
+            for field_name in search_fields:
+                field_value = str(row.get(field_name, "") or "")
+                if keyword.lower() in field_value.lower():
+                    return MatchResult(
+                        status="match",
+                        match_score=1.0,
+                        evidence_text=f"在 {field_name} 中找到关键词「{keyword}」: {field_value}",
+                        evidence_location="{}",
+                        match_method="keyword",
+                        needs_review=False,
+                    )
+
+        return MatchResult(
+            status="unclear",
+            match_score=0.0,
+            evidence_text=f"未在供应商数据中找到关键词「{keyword}」",
+            evidence_location="{}",
+            match_method="keyword",
+            needs_review=True,
+        )
+
+    def _match_numeric(
+        self, requirement: dict, rows: list[dict]
+    ) -> MatchResult:
+        """numeric 匹配：提取数值与目标值比较。"""
+        expected_str = (requirement.get("expected_value") or "").strip()
+        operator = requirement.get("operator", "gte")
+
+        try:
+            expected = float(expected_str)
+        except (ValueError, TypeError):
+            return MatchResult(
+                status="unclear",
+                match_score=0.0,
+                evidence_text=f"无法解析目标值: {expected_str}",
+                evidence_location="{}",
+                match_method="numeric",
+                needs_review=True,
+            )
+
+        search_fields = ["spec_model", "remark", "product_name"]
+        for row in rows:
+            for field_name in search_fields:
+                field_value = str(row.get(field_name, "") or "")
+                numbers = re.findall(r"[\d]+\.?\d*", field_value)
+                for num_str in numbers:
+                    try:
+                        actual = float(num_str)
+                    except ValueError:
+                        continue
+
+                    satisfied = self._compare_numeric(actual, expected, operator)
+                    if satisfied is not None:
+                        status = "match" if satisfied else "no_match"
+                        return MatchResult(
+                            status=status,
+                            match_score=1.0 if satisfied else 0.0,
+                            evidence_text=(
+                                f"在 {field_name} 中提取数值 {actual}，"
+                                f"目标 {operator} {expected}"
+                            ),
+                            evidence_location="{}",
+                            match_method="numeric",
+                            needs_review=False,
+                        )
+
+        return MatchResult(
+            status="unclear",
+            match_score=0.0,
+            evidence_text="未能从供应商数据中提取可比较的数值",
+            evidence_location="{}",
+            match_method="numeric",
+            needs_review=True,
+        )
+
+    def _compare_numeric(
+        self, actual: float, expected: float, operator: str
+    ) -> bool | None:
+        if operator == "gte":
+            return actual >= expected
+        elif operator == "lte":
+            return actual <= expected
+        elif operator == "eq":
+            return abs(actual - expected) < 0.001
+        elif operator == "range":
+            return None  # range 需要两个值，MVP 简化处理
+        return None
 
     # ---- 导入解析 ----
 
