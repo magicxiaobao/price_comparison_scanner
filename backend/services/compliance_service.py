@@ -343,6 +343,13 @@ class ComplianceService:
     def _update_stage_status(
         self, project_id: str, stage: str, status: str
     ) -> None:
+        allowed_stages = {
+            "compliance_status",
+            "comparison_status",
+        }
+        if stage not in allowed_stages:
+            msg = f"Invalid stage: {stage}"
+            raise ValueError(msg)
         now = datetime.now(UTC).isoformat()
         with self.db.transaction() as conn:
             conn.execute(
