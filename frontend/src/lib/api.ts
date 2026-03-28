@@ -58,6 +58,7 @@ if (devToken) {
 interface SidecarInfo {
   port: number;
   token: string;
+  safeMode?: boolean;
 }
 
 /**
@@ -73,7 +74,43 @@ export async function initApiConnection(): Promise<void> {
     const { invoke } = await import("@tauri-apps/api/core");
     const info = await invoke<SidecarInfo>("get_sidecar_info");
     configureTauriConnection(info.port, info.token);
+
+    // Listen for sidecar restart events (port may change)
+    const { listen } = await import("@tauri-apps/api/event");
+    await listen<{ port: number }>("sidecar-restarted", (event) => {
+      configureTauriConnection(event.payload.port, info.token);
+      console.log(`[sidecar] restarted on port ${event.payload.port}`);
+    });
+
+    // Listen for safe mode (sidecar failed to recover)
+    await listen("sidecar-safe-mode", () => {
+      showSafeModeOverlay();
+    });
   }
+}
+
+/** Display a blocking overlay when sidecar enters safe mode */
+function showSafeModeOverlay(): void {
+  if (document.getElementById("sidecar-safe-mode-overlay")) return;
+
+  const overlay = document.createElement("div");
+  overlay.id = "sidecar-safe-mode-overlay";
+  overlay.style.cssText =
+    "position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px)";
+  overlay.innerHTML = `
+    <div style="background:white;border-radius:12px;padding:32px 40px;max-width:420px;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.2)">
+      <div style="font-size:36px;margin-bottom:12px">&#9888;</div>
+      <h2 style="margin:0 0 8px;font-size:18px;font-weight:600;color:#1a1a1a">后端服务异常</h2>
+      <p style="margin:0 0 20px;font-size:14px;color:#666;line-height:1.6">
+        后端服务多次启动失败，无法自动恢复。<br/>请关闭并重新启动应用。<br/>如问题持续，请联系技术支持。
+      </p>
+      <button onclick="location.reload()"
+        style="padding:8px 24px;border:1px solid #d1d5db;border-radius:6px;background:#f9fafb;cursor:pointer;font-size:14px;color:#374151">
+        尝试刷新
+      </button>
+    </div>
+  `;
+  document.body.appendChild(overlay);
 }
 
 // ---- 项目 API ----
