@@ -9,7 +9,6 @@ import pytest
 from db.database import Database
 from services.problem_service import ProblemService
 
-
 # ---- helpers ----
 
 def _insert_supplier_file(
