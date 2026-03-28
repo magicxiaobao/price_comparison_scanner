@@ -5,8 +5,11 @@ use std::time::{Duration, Instant, SystemTime};
 
 use serde::Serialize;
 use tauri::{AppHandle, Emitter, Manager, Runtime};
-use tauri_plugin_shell::ShellExt;
+// tauri-plugin-localhost 在生产模式下从 http://localhost:FRONTEND_PORT 提供前端资源
 use tauri_plugin_shell::process::CommandChild;
+use tauri_plugin_shell::ShellExt;
+
+const FRONTEND_PORT: u16 = 9527;
 
 const HEARTBEAT_INTERVAL_SECS: u64 = 5;
 const HEARTBEAT_TIMEOUT_SECS: u64 = 3;
@@ -45,7 +48,7 @@ struct SidecarRestartedPayload {
 struct SidecarProgress {
     step: String,
     message: String,
-    progress: u32,      // 0-100
+    progress: u32, // 0-100
 }
 
 fn timestamp_str() -> String {
@@ -99,7 +102,10 @@ fn cleanup_orphan<R: Runtime>(app: &AppHandle<R>) {
 
     if let Ok(content) = fs::read_to_string(&pid_path) {
         if let Ok(old_pid) = content.trim().parse::<u32>() {
-            sidecar_log(&app_data, &format!("cleanup_orphan: killing old pid {}", old_pid));
+            sidecar_log(
+                &app_data,
+                &format!("cleanup_orphan: killing old pid {}", old_pid),
+            );
             kill_pid(old_pid);
         }
     }
@@ -144,7 +150,10 @@ fn start_sidecar<R: Runtime>(app: &AppHandle<R>) -> Result<SidecarState, String>
     let port = find_available_port()?;
 
     let app_data = app.path().app_data_dir().unwrap_or_default();
-    sidecar_log(&app_data, &format!("start_sidecar: port={}, token={}...", port, &token[..8]));
+    sidecar_log(
+        &app_data,
+        &format!("start_sidecar: port={}, token={}...", port, &token[..8]),
+    );
 
     let result = start_sidecar_with(app, port, &token);
     match &result {
@@ -161,13 +170,19 @@ fn start_sidecar_with<R: Runtime>(
     token: &str,
 ) -> Result<SidecarState, String> {
     let app_data = app.path().app_data_dir().unwrap_or_default();
-    sidecar_log(&app_data, &format!("start_sidecar_with: creating command, port={}", port));
+    sidecar_log(
+        &app_data,
+        &format!("start_sidecar_with: creating command, port={}", port),
+    );
 
-    let _ = app.emit("sidecar-progress", SidecarProgress {
-        step: "spawning".into(),
-        message: "正在启动后端服务...".into(),
-        progress: 5,
-    });
+    let _ = app.emit(
+        "sidecar-progress",
+        SidecarProgress {
+            step: "spawning".into(),
+            message: "正在启动后端服务...".into(),
+            progress: 5,
+        },
+    );
 
     let (mut rx, child) = app
         .shell()
@@ -185,13 +200,19 @@ fn start_sidecar_with<R: Runtime>(
         .map_err(|e| format!("启动 sidecar 失败: {}", e))?;
 
     let pid = child.pid();
-    sidecar_log(&app_data, &format!("start_sidecar_with: spawned pid={}", pid));
+    sidecar_log(
+        &app_data,
+        &format!("start_sidecar_with: spawned pid={}", pid),
+    );
 
-    let _ = app.emit("sidecar-progress", SidecarProgress {
-        step: "spawned".into(),
-        message: format!("后端进程已启动 (PID:{})，正在加载资源...", pid),
-        progress: 10,
-    });
+    let _ = app.emit(
+        "sidecar-progress",
+        SidecarProgress {
+            step: "spawned".into(),
+            message: format!("后端进程已启动 (PID:{})，正在加载资源...", pid),
+            progress: 10,
+        },
+    );
 
     // Write PID file
     if let Some(app_data_dir) = app.path().app_data_dir().ok() {
@@ -235,7 +256,10 @@ fn start_sidecar_with<R: Runtime>(
         .build()
         .map_err(|e| format!("创建 tokio runtime 失败: {}", e))?;
 
-    sidecar_log(&app_data, "start_sidecar_with: starting health check (max 60s)");
+    sidecar_log(
+        &app_data,
+        "start_sidecar_with: starting health check (max 60s)",
+    );
 
     let app_for_progress = app.clone();
     let ready = rt.block_on(async {
@@ -251,11 +275,14 @@ fn start_sidecar_with<R: Runtime>(
             if i % 4 == 0 {
                 let elapsed_secs = (i + 1) / 2;
                 let progress = 10 + (elapsed_secs as u32 * 90 / 60).min(85); // 10% → 95%
-                let _ = app_for_progress.emit("sidecar-progress", SidecarProgress {
-                    step: "health_check".into(),
-                    message: format!("等待服务就绪... ({}s/60s)", elapsed_secs),
-                    progress,
-                });
+                let _ = app_for_progress.emit(
+                    "sidecar-progress",
+                    SidecarProgress {
+                        step: "health_check".into(),
+                        message: format!("等待服务就绪... ({}s/60s)", elapsed_secs),
+                        progress,
+                    },
+                );
             }
 
             match client
@@ -266,15 +293,22 @@ fn start_sidecar_with<R: Runtime>(
             {
                 Ok(resp) if resp.status().is_success() => {
                     eprintln!("[sidecar] health check passed on attempt {}", i + 1);
-                    let _ = app_for_progress.emit("sidecar-progress", SidecarProgress {
-                        step: "ready".into(),
-                        message: "后端服务已就绪！".into(),
-                        progress: 100,
-                    });
+                    let _ = app_for_progress.emit(
+                        "sidecar-progress",
+                        SidecarProgress {
+                            step: "ready".into(),
+                            message: "后端服务已就绪！".into(),
+                            progress: 100,
+                        },
+                    );
                     return true;
                 }
                 Ok(resp) => {
-                    eprintln!("[sidecar] health check attempt {}: status {}", i + 1, resp.status());
+                    eprintln!(
+                        "[sidecar] health check attempt {}: status {}",
+                        i + 1,
+                        resp.status()
+                    );
                 }
                 Err(e) => {
                     if i % 10 == 9 {
@@ -314,7 +348,10 @@ fn cleanup_sidecar<R: Runtime>(app: &AppHandle<R>, state: &Mutex<Option<SidecarS
         let shutdown_url = format!("http://127.0.0.1:{}/api/shutdown", sidecar.port);
         let token = format!("Bearer {}", sidecar.token);
 
-        sidecar_log(&app_data, &format!("cleanup_sidecar: sending shutdown to port {}", sidecar.port));
+        sidecar_log(
+            &app_data,
+            &format!("cleanup_sidecar: sending shutdown to port {}", sidecar.port),
+        );
 
         let rt = tokio::runtime::Builder::new_current_thread()
             .enable_all()
@@ -412,10 +449,17 @@ fn spawn_heartbeat_loop<R: Runtime + 'static>(app: AppHandle<R>) {
 
             // 3 consecutive failures — attempt restart
             let app_data = app.path().app_data_dir().unwrap_or_default();
-            sidecar_log(&app_data, &format!(
-                "heartbeat: {} consecutive failures, attempting restart", consecutive_failures
-            ));
-            eprintln!("[heartbeat] {} consecutive failures, attempting restart", consecutive_failures);
+            sidecar_log(
+                &app_data,
+                &format!(
+                    "heartbeat: {} consecutive failures, attempting restart",
+                    consecutive_failures
+                ),
+            );
+            eprintln!(
+                "[heartbeat] {} consecutive failures, attempting restart",
+                consecutive_failures
+            );
 
             let should_safe_mode = {
                 let mut guard = state_mutex.lock().unwrap();
@@ -425,7 +469,8 @@ fn spawn_heartbeat_loop<R: Runtime + 'static>(app: AppHandle<R>) {
                 };
 
                 // Reset restart window if expired
-                if sidecar.restart_window_start.elapsed() > Duration::from_secs(RESTART_WINDOW_SECS) {
+                if sidecar.restart_window_start.elapsed() > Duration::from_secs(RESTART_WINDOW_SECS)
+                {
                     sidecar.restart_count = 0;
                     sidecar.restart_window_start = Instant::now();
                 }
@@ -440,7 +485,10 @@ fn spawn_heartbeat_loop<R: Runtime + 'static>(app: AppHandle<R>) {
             };
 
             if should_safe_mode {
-                sidecar_log(&app_data, "heartbeat: restart limit reached, entering safe mode");
+                sidecar_log(
+                    &app_data,
+                    "heartbeat: restart limit reached, entering safe mode",
+                );
                 eprintln!("[heartbeat] restart limit reached, entering safe mode");
                 let _ = app.emit("sidecar-safe-mode", ());
                 break;
@@ -500,11 +548,16 @@ fn spawn_heartbeat_loop<R: Runtime + 'static>(app: AppHandle<R>) {
                         }
                     }
                     consecutive_failures = 0;
-                    sidecar_log(&app_data, &format!("heartbeat: sidecar restarted on port {}", restarted_port));
+                    sidecar_log(
+                        &app_data,
+                        &format!("heartbeat: sidecar restarted on port {}", restarted_port),
+                    );
                     eprintln!("[heartbeat] sidecar restarted on port {}", restarted_port);
                     let _ = app.emit(
                         "sidecar-restarted",
-                        SidecarRestartedPayload { port: restarted_port },
+                        SidecarRestartedPayload {
+                            port: restarted_port,
+                        },
                     );
                 }
                 Err(e) => {
@@ -542,6 +595,7 @@ fn get_sidecar_info(
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_localhost::Builder::new(FRONTEND_PORT).build())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_shell::init())
         .manage(Mutex::new(None::<SidecarState>))
@@ -555,10 +609,8 @@ pub fn run() {
                 // start_sidecar 内部创建了 tokio::runtime::Builder::new_current_thread()，
                 // 在 async 上下文中需要用 spawn_blocking 避免嵌套 runtime 冲突
                 let handle_clone = handle.clone();
-                let result = tokio::task::spawn_blocking(move || {
-                    start_sidecar(&handle_clone)
-                })
-                .await;
+                let result =
+                    tokio::task::spawn_blocking(move || start_sidecar(&handle_clone)).await;
 
                 match result {
                     Ok(Ok(state)) => {
