@@ -494,7 +494,10 @@ fn get_sidecar_info(
         }),
         None => {
             let err = startup_err.0.lock().unwrap();
-            Err(err.clone().unwrap_or_else(|| "Sidecar 尚未启动".to_string()))
+            match err.as_ref() {
+                Some(e) => Err(format!("STARTUP_FAILED:{}", e)),
+                None => Err("STARTING".to_string()),
+            }
         }
     }
 }
@@ -509,24 +512,49 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![get_sidecar_info])
         .setup(|app| {
             let handle = app.handle().clone();
-            match start_sidecar(&handle) {
-                Ok(state) => {
-                    let managed: tauri::State<Mutex<Option<SidecarState>>> = handle.state();
-                    let mut guard = managed.lock().unwrap();
-                    *guard = Some(state);
-                    eprintln!("[sidecar] 启动成功");
 
-                    // Start heartbeat monitoring loop
-                    spawn_heartbeat_loop(handle.clone());
+            // 非阻塞：在后台启动 sidecar，窗口立即出现
+            tauri::async_runtime::spawn(async move {
+                // start_sidecar 内部创建了 tokio::runtime::Builder::new_current_thread()，
+                // 在 async 上下文中需要用 spawn_blocking 避免嵌套 runtime 冲突
+                let handle_clone = handle.clone();
+                let result = tokio::task::spawn_blocking(move || {
+                    start_sidecar(&handle_clone)
+                })
+                .await;
+
+                match result {
+                    Ok(Ok(state)) => {
+                        let managed: tauri::State<Mutex<Option<SidecarState>>> = handle.state();
+                        let mut guard = managed.lock().unwrap();
+                        *guard = Some(state);
+
+                        let app_data = handle.path().app_data_dir().unwrap_or_default();
+                        sidecar_log(&app_data, "sidecar 启动成功（异步）");
+                        eprintln!("[sidecar] 启动成功（异步）");
+
+                        spawn_heartbeat_loop(handle.clone());
+                    }
+                    Ok(Err(e)) => {
+                        let app_data = handle.path().app_data_dir().unwrap_or_default();
+                        sidecar_log(&app_data, &format!("启动失败: {}", e));
+                        eprintln!("[sidecar] 启动失败: {}", e);
+
+                        let err_state: tauri::State<StartupError> = handle.state();
+                        *err_state.0.lock().unwrap() = Some(e);
+                    }
+                    Err(join_err) => {
+                        let msg = format!("sidecar 启动任务异常: {}", join_err);
+                        let app_data = handle.path().app_data_dir().unwrap_or_default();
+                        sidecar_log(&app_data, &msg);
+                        eprintln!("[sidecar] {}", msg);
+
+                        let err_state: tauri::State<StartupError> = handle.state();
+                        *err_state.0.lock().unwrap() = Some(msg);
+                    }
                 }
-                Err(e) => {
-                    let app_data = handle.path().app_data_dir().unwrap_or_default();
-                    sidecar_log(&app_data, &format!("启动失败: {}", e));
-                    eprintln!("[sidecar] 启动失败: {}", e);
-                    let err_state: tauri::State<StartupError> = handle.state();
-                    *err_state.0.lock().unwrap() = Some(e);
-                }
-            }
+            });
+
             Ok(())
         })
         .on_window_event(|window, event| {

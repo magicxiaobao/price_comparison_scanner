@@ -72,20 +72,40 @@ export async function initApiConnection(): Promise<void> {
   const { isTauri } = await import("@tauri-apps/api/core");
   if (isTauri()) {
     const { invoke } = await import("@tauri-apps/api/core");
-    const info = await invoke<SidecarInfo>("get_sidecar_info");
-    configureTauriConnection(info.port, info.token);
 
-    // Listen for sidecar restart events (port may change)
-    const { listen } = await import("@tauri-apps/api/event");
-    await listen<{ port: number }>("sidecar-restarted", (event) => {
-      configureTauriConnection(event.payload.port, info.token);
-      console.log(`[sidecar] restarted on port ${event.payload.port}`);
-    });
+    // 重试最多 30 次（每秒 1 次），等待异步 sidecar 启动完成
+    let lastError = "";
+    for (let i = 0; i < 30; i++) {
+      try {
+        const info = await invoke<SidecarInfo>("get_sidecar_info");
+        configureTauriConnection(info.port, info.token);
 
-    // Listen for safe mode (sidecar failed to recover)
-    await listen("sidecar-safe-mode", () => {
-      showSafeModeOverlay();
-    });
+        // Listen for sidecar restart events (port may change)
+        const { listen } = await import("@tauri-apps/api/event");
+        await listen<{ port: number }>("sidecar-restarted", (event) => {
+          configureTauriConnection(event.payload.port, info.token);
+          console.log(`[sidecar] restarted on port ${event.payload.port}`);
+        });
+
+        // Listen for safe mode (sidecar failed to recover)
+        await listen("sidecar-safe-mode", () => {
+          showSafeModeOverlay();
+        });
+
+        return; // 成功，退出
+      } catch (err) {
+        const errStr = String(err);
+        if (errStr.includes("STARTING")) {
+          // sidecar 还在启动中，继续等待
+          await new Promise((r) => setTimeout(r, 1000));
+          continue;
+        }
+        // 其他错误（STARTUP_FAILED 等），不再重试
+        lastError = errStr.replace("STARTUP_FAILED:", "");
+        break;
+      }
+    }
+    throw new Error(lastError || "Sidecar 启动超时");
   }
 }
 
