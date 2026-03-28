@@ -9,4 +9,5 @@ export interface TaskInfo {
   created_at: string;
   started_at: string | null;
   completed_at: string | null;
+  result: unknown;
 }

@@ -17,6 +17,7 @@ interface ComparisonStore {
   exportProgress: number;
   exportError: string | null;
   exportFilePath: string | null;
+  exportFileName: string | null;
 
   loadResults: (projectId: string) => Promise<void>;
   generateComparison: (projectId: string) => Promise<void>;
@@ -37,6 +38,7 @@ export const useComparisonStore = create<ComparisonStore>((set, get) => ({
   exportProgress: 0,
   exportError: null,
   exportFilePath: null,
+  exportFileName: null,
 
   loadResults: async (projectId: string) => {
     set({ isLoading: true, error: null });
@@ -122,10 +124,13 @@ export const useComparisonStore = create<ComparisonStore>((set, get) => ({
           set({ exportProgress: status.progress });
           if (status.status === "completed") {
             clearInterval(pollTimer);
+            const result = status.result as { filePath?: string; fileName?: string } | null;
             set({
               isExporting: false,
               exportTaskId: null,
               exportProgress: 1,
+              exportFilePath: result?.filePath ?? null,
+              exportFileName: result?.fileName ?? null,
             });
           } else if (status.status === "failed") {
             clearInterval(pollTimer);
@@ -154,6 +159,6 @@ export const useComparisonStore = create<ComparisonStore>((set, get) => ({
   },
 
   clearExportResult: () => {
-    set({ exportFilePath: null, exportError: null, exportProgress: 0 });
+    set({ exportFilePath: null, exportFileName: null, exportError: null, exportProgress: 0 });
   },
 }));

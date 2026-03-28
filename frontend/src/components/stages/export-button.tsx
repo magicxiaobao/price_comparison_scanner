@@ -7,8 +7,15 @@ interface ExportButtonProps {
 }
 
 export function ExportButton({ projectId, disabled }: ExportButtonProps) {
-  const { isExporting, exportProgress, exportError, exportReport } =
-    useComparisonStore();
+  const {
+    isExporting,
+    exportProgress,
+    exportError,
+    exportFilePath,
+    exportFileName,
+    exportReport,
+    clearExportResult,
+  } = useComparisonStore();
 
   return (
     <div className="flex items-center gap-3">
@@ -46,6 +53,19 @@ export function ExportButton({ projectId, disabled }: ExportButtonProps) {
       </Button>
       {exportError && (
         <span className="text-xs text-red-500">{exportError}</span>
+      )}
+      {exportFilePath && (
+        <span className="flex items-center gap-1 text-xs text-green-600">
+          导出完成：{exportFileName ?? exportFilePath}
+          <button
+            type="button"
+            className="ml-1 text-slate-400 hover:text-slate-600"
+            onClick={clearExportResult}
+            aria-label="关闭"
+          >
+            ×
+          </button>
+        </span>
       )}
     </div>
   );

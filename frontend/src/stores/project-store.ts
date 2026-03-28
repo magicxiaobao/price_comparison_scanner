@@ -102,6 +102,7 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
       created_at: new Date().toISOString(),
       started_at: null,
       completed_at: null,
+      result: null,
     };
     set((state) => ({
       activeTasks: { ...state.activeTasks, [taskId]: placeholder },
