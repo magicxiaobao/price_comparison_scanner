@@ -2119,6 +2119,26 @@
           }
         }
       }
+    },
+    "/api/shutdown": {
+      "post": {
+        "tags": [
+          "系统"
+        ],
+        "summary": "Shutdown",
+        "description": "优雅关闭 sidecar 进程。Tauri 退出时调用。",
+        "operationId": "shutdown_api_shutdown_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -4255,6 +4275,15 @@
               }
             ],
             "title": "Completed At"
+          },
+          "result": {
+            "anyOf": [
+              {},
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Result"
           }
         },
         "type": "object",

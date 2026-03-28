@@ -13,6 +13,7 @@ from api.problems import router as problems_router
 from api.projects import router as projects_router
 from api.requirements import router as requirements_router
 from api.rules import router as rules_router
+from api.shutdown import router as shutdown_router
 from api.standardization import router as standardization_router
 from api.tasks import router as tasks_router
 from config import settings
@@ -38,6 +39,7 @@ app.include_router(compliance_router, prefix="/api")
 app.include_router(comparison_router, prefix="/api")
 app.include_router(export_router, prefix="/api")
 app.include_router(problems_router, prefix="/api")
+app.include_router(shutdown_router, prefix="/api")
 
 # 注意：不添加 CORSMiddleware。开发模式下通过 Vite proxy 解决跨域。
 
