@@ -23,6 +23,25 @@
 
 ## 实现规格
 
+### 数据契约说明（C5 + C12 修复）
+
+**supplier_prices 数据流：**
+```
+引擎层 SupplierPriceData (dataclass, 含 tax_basis/unit/currency)
+  ↓ compare_group() 返回 ComparisonData.supplier_prices
+服务层 comparison_service.py 序列化为 JSON 字符串（含 tax_basis/unit）
+  ↓ 写入 DB comparison_results.supplier_prices (TEXT)
+  ↓ _to_response() 读取 JSON → 构造 SupplierPrice Pydantic 模型
+API 层返回 ComparisonResultResponse.supplier_prices: list[SupplierPrice]
+  ↓ ReportGenerator 从 DB 直接读取 JSON 字符串 → json.loads → dict
+```
+
+**关键约束：**
+- `SupplierPriceData`（引擎 dataclass）含 `tax_basis`, `unit`, `currency`
+- `SupplierPrice`（Pydantic 响应模型，Task 4.11）含 `tax_basis`, `unit`（已补）
+- `comparison_service.py` 序列化时必须保留 `tax_basis`, `unit`（已修）
+- `ReportGenerator` 从 DB 读取的 JSON 已包含这两个字段，无需额外处理
+
 ### engines/price_comparator.py
 
 ```python
@@ -170,10 +189,27 @@ class PriceComparator:
         anomalies: list[AnomalyInfo] = []
 
         # 税价口径不一致
+        # [C6-fix] 「未知」口径处理策略：
+        # - 「未知」不参与一致性比较（不加入 tax_bases 集合）
+        # - 若所有已知口径一致（如全是「含税」），则「未知」的供应商视为与已知口径相同，不触发异常
+        # - 若已知口径本身就不一致（「含税」+「不含税」），「未知」的存在不改变异常结论
+        # - 若所有供应商都是「未知」，则不触发异常（无法判定，由用户自行确认）
+        # - 存在「未知」口径时，在 missing_required_field 异常中提示用户确认
         tax_bases = set()
+        unknown_tax_suppliers: list[str] = []
         for p in prices:
             if p.tax_basis and p.tax_basis != "未知":
                 tax_bases.add(p.tax_basis)
+            elif not p.tax_basis or p.tax_basis == "未知":
+                unknown_tax_suppliers.append(p.supplier_name)
+        if unknown_tax_suppliers and tax_bases:
+            # 有已知口径也有未知口径 → 标记提醒（不阻断）
+            anomalies.append(AnomalyInfo(
+                type="missing_required_field",
+                description=f"税价口径未明确: {', '.join(unknown_tax_suppliers)}（建议确认后再比价）",
+                blocking=False,
+                affected_suppliers=unknown_tax_suppliers,
+            ))
         if len(tax_bases) > 1:
             anomalies.append(AnomalyInfo(
                 type="tax_basis_mismatch",
@@ -353,12 +389,15 @@ class ComparisonService:
             comparison = self.engine.compare_group(group, supplier_rows_map, eligible_ids)
 
             result_id = str(uuid.uuid4())
+            # [C12-fix] 序列化时必须包含 tax_basis 和 unit，ReportGenerator Sheet1 依赖这两个字段
             supplier_prices_json = json.dumps([
                 {
                     "supplier_file_id": p.supplier_file_id,
                     "supplier_name": p.supplier_name,
                     "unit_price": p.unit_price,
                     "total_price": p.total_price,
+                    "tax_basis": p.tax_basis,
+                    "unit": p.unit,
                 }
                 for p in comparison.supplier_prices
             ], ensure_ascii=False)
@@ -673,3 +712,16 @@ git add backend/engines/price_comparator.py backend/db/comparison_repo.py \
        backend/tests/test_price_comparator.py backend/tests/test_comparison_repo.py
 git commit -m "Phase 4.4: PriceComparator — 比价计算 + 异常检测(税价/单位/币种/缺项) + 双口径最低价 + ComparisonRepo"
 ```
+
+## Review Notes（审查发现的 Medium/Low 问题）
+
+### 实现约束（开发时必须处理）
+
+- **[M4 关联] `_get_confirmed_groups` 不应包含 candidate 状态**：与 Task 4.2 同一问题。`comparison_service.py` 中也有此查询，应改为 `WHERE status = 'confirmed'`。
+- **[M9] 单位不一致检测需考虑全半角**：当前 `.strip().lower()` 不处理全半角。建议在 `detect_anomalies` 中对 unit 做 `unicodedata.normalize('NFKC', ...)` 转换。
+
+### Reviewer 提醒
+
+- **[M7] `_get_supplier_rows_for_group()` 空结果**：若组不存在或无成员，返回空 dict，min_price 为 None。不阻断但建议在 comparison_status 中体现（如 "blocked"）。
+- **[M8] `eligible_supplier_ids=[]` 时无异常解释**：effective_min_price=None 但 anomaly_details 中无说明。建议由前端在展示层处理，显示"所有供应商不符合需求"。
+- **[Low] 缺少边界测试用例**：空 supplier_rows_map、所有供应商缺项、float precision 边界。实现时补充。

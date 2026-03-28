@@ -659,3 +659,15 @@ git add backend/engines/compliance_evaluator.py backend/db/compliance_repo.py \
        backend/tests/test_compliance_evaluator.py backend/tests/test_compliance_repo.py
 git commit -m "Phase 4.2: 符合性匹配引擎 — keyword/numeric/manual 三类匹配 + ComplianceRepo + 矩阵/确认/可接受"
 ```
+
+## Review Notes（审查发现的 Medium/Low 问题）
+
+### 实现约束（开发时必须处理）
+
+- **[M4] `_get_confirmed_groups` 不应包含 candidate 状态**：PRD 明确"未确认项不进入比价结论"。符合性匹配应仅对 `status = 'confirmed'` 的归组执行。将查询改为 `WHERE status = 'confirmed'`。
+- **[M5] `evaluate` 方法需 `import json`**：代码中使用 `json.dumps()` 序列化 engine_versions，需在文件顶部或方法开头确保 import。
+- **[C3-fix 关联] ComplianceService 必须提供 `get_match(match_id)` 方法**：内部委托 `ComplianceRepo.get_by_id(match_id)`，供 Task 4.3 API 层调用。
+
+### Reviewer 提醒
+
+- **[Low] `_match_numeric` 贪心匹配风险**：对字段中多个数值（如 "16GB/512GB SSD"）取第一个匹配。MVP 可接受，文档说明即可。

@@ -66,7 +66,8 @@ async def get_compliance_matrix(project_id: str):
 async def confirm_match(match_id: str, req: ComplianceConfirmRequest):
     """确认匹配结果。请求体含 project_id + status"""
     service = _get_service(req.project_id)
-    match = service.repo.get_by_id(match_id)
+    # [C3-fix] 通过 service 层方法查询 match，而非直接访问 repo（避免 repo 类型歧义）
+    match = service.get_match(match_id)
     if not match:
         raise HTTPException(status_code=404, detail="匹配记录不存在")
     result = service.confirm_match(match_id, req.status)
@@ -77,7 +78,8 @@ async def confirm_match(match_id: str, req: ComplianceConfirmRequest):
 async def accept_match(match_id: str, req: ComplianceAcceptRequest):
     """标记部分符合为可接受。请求体含 project_id + is_acceptable"""
     service = _get_service(req.project_id)
-    match = service.repo.get_by_id(match_id)
+    # [C3-fix] 同上
+    match = service.get_match(match_id)
     if not match:
         raise HTTPException(status_code=404, detail="匹配记录不存在")
     result = service.accept_match(match_id, req.is_acceptable)
@@ -86,7 +88,9 @@ async def accept_match(match_id: str, req: ComplianceAcceptRequest):
 
 ```
 
-**注意：** `ComplianceConfirmRequest` 和 `ComplianceAcceptRequest` 必须包含 `project_id` 字段（在 Task 4.11 Pydantic 模型中定义）。这样 API 层无需遍历全局项目配置来定位 match 所属项目。
+**注意：**
+- `ComplianceConfirmRequest` 和 `ComplianceAcceptRequest` 必须包含 `project_id` 字段（在 Task 4.11 Pydantic 模型中定义）。这样 API 层无需遍历全局项目配置来定位 match 所属项目。
+- **[C3-fix] ComplianceService 必须提供 `get_match(match_id)` 方法**，内部委托 `ComplianceRepo.get_by_id(match_id)` 查询 `compliance_matches` 表。API 层通过此方法查询，不直接访问 repo，避免 repo 类型歧义。Task 4.2 实现 ComplianceService 时须包含此方法。
 
 ### main.py 修改
 
@@ -129,10 +133,10 @@ class TestComplianceAPI:
             assert "suppliers" in row
 
     @pytest.mark.anyio
-    async def test_confirm_match(self, client_with_compliance_results, first_match_id):
+    async def test_confirm_match(self, client_with_compliance_results, project_id, first_match_id):
         resp = await client_with_compliance_results.put(
             f"/api/compliance/{first_match_id}/confirm",
-            json={"status": "match"},
+            json={"project_id": project_id, "status": "match"},  # [C2-fix] 补 project_id
         )
         assert resp.status_code == 200
         data = resp.json()
@@ -140,19 +144,19 @@ class TestComplianceAPI:
         assert data["needs_review"] == 0
 
     @pytest.mark.anyio
-    async def test_accept_match(self, client_with_compliance_results, partial_match_id):
+    async def test_accept_match(self, client_with_compliance_results, project_id, partial_match_id):
         resp = await client_with_compliance_results.put(
             f"/api/compliance/{partial_match_id}/accept",
-            json={"is_acceptable": True},
+            json={"project_id": project_id, "is_acceptable": True},  # [C2-fix] 补 project_id
         )
         assert resp.status_code == 200
         assert resp.json()["is_acceptable"] == 1
 
     @pytest.mark.anyio
-    async def test_confirm_nonexistent_match(self, client_with_compliance_results):
+    async def test_confirm_nonexistent_match(self, client_with_compliance_results, project_id):
         resp = await client_with_compliance_results.put(
             "/api/compliance/nonexistent/confirm",
-            json={"status": "match"},
+            json={"project_id": project_id, "status": "match"},
         )
         assert resp.status_code == 404
 
@@ -163,16 +167,16 @@ class TestComplianceAPI:
         """确认匹配结果后 comparison_status 变为 dirty"""
         await client_with_compliance_results.put(
             f"/api/compliance/{first_match_id}/confirm",
-            json={"status": "match"},
+            json={"project_id": project_id, "status": "match"},
         )
         resp = await client_with_compliance_results.get(f"/api/projects/{project_id}")
         assert resp.json()["stage_statuses"]["comparison_status"] == "dirty"
 
     @pytest.mark.anyio
-    async def test_invalid_confirm_status(self, client_with_compliance_results, first_match_id):
+    async def test_invalid_confirm_status(self, client_with_compliance_results, project_id, first_match_id):
         resp = await client_with_compliance_results.put(
             f"/api/compliance/{first_match_id}/confirm",
-            json={"status": "invalid_status"},
+            json={"project_id": project_id, "status": "invalid_status"},
         )
         assert resp.status_code == 422
 ```

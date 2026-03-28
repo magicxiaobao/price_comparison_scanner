@@ -22,6 +22,36 @@
 
 **MCP 强制规则**：实现前必须通过 openapi-contract MCP 工具查询 problems API 响应结构。
 
+### [C11-fix] ProblemGroup.type 完整枚举
+
+| type 值 | label（显示名） | stage | 默认 severity |
+|---------|----------------|-------|---------------|
+| `unconfirmed_supplier` | 未确认供应商名称 | `import` | warning |
+| `unmapped_field` | 未映射字段 | `normalize` | warning |
+| `rule_conflict` | 规则冲突 | `normalize` | warning |
+| `low_confidence_unconfirmed` | 低置信字段未确认 | `normalize` | warning |
+| `missing_required_field` | 必填字段缺失 | `normalize` | warning |
+| `unconfirmed_group` | 未确认归组项 | `grouping` | warning |
+| `unconfirmed_compliance` | 未确认需求匹配 | `compliance` | warning |
+| `mandatory_not_met` | 必选需求未满足 | `compliance` | **error** |
+| `unclear_unconfirmed` | 无法判断且未确认 | `compliance` | warning |
+| `partial_not_decided` | 部分符合但未判定可接受 | `compliance` | warning |
+| `unit_mismatch` | 单位不一致异常 | `comparison` | **error** |
+| `tax_basis_mismatch` | 税价口径异常 | `comparison` | **error** |
+
+### [C11-fix] stage → icon 映射表
+
+```typescript
+const STAGE_ICON_MAP: Record<string, { icon: string; label: string }> = {
+  import:     { icon: 'Upload',      label: '导入' },
+  normalize:  { icon: 'Table',       label: '标准化' },
+  grouping:   { icon: 'Group',       label: '归组' },
+  compliance: { icon: 'ClipboardCheck', label: '符合性' },
+  comparison: { icon: 'BarChart3',   label: '比价' },
+};
+// icon 值对应 lucide-react 图标名称
+```
+
 ### 组件结构
 
 #### problem-panel.tsx
@@ -62,10 +92,12 @@ ProblemPanel
 ### api.ts 新增调用
 
 ```typescript
+// 注意：后端使用 _CAMEL_CONFIG，API JSON 字段名为 camelCase
+
 interface ProblemItem {
   id: string;
   stage: string;
-  target_id: string;
+  targetId: string;
   description: string;
   severity: 'warning' | 'error';
 }
@@ -74,6 +106,7 @@ interface ProblemGroup {
   type: string;
   label: string;
   stage: string;
+  severity: 'warning' | 'error';    // [M1-fix] 与后端 ProblemGroup 模型对齐
   count: number;
   items: ProblemItem[];
 }
@@ -131,3 +164,15 @@ git add frontend/src/components/stages/problem-panel.tsx \
        frontend/src/app/project-workbench.tsx
 git commit -m "Phase 4.10: ProblemPanel — 跨阶段问题清单面板(12类问题/分组/跳转/折叠/全清零提示)"
 ```
+
+## Review Notes（审查发现的 Medium/Low 问题）
+
+### 实现约束（开发时必须处理）
+
+- **[M19] 问题面板刷新触发机制**：通过 `useEffect` 监听 ProjectStore 中的 stage status 变化（任何 stage_status 字段变化时触发 `refreshProblems`）。阶段 API 操作成功后，前端会刷新 project 状态，间接触发面板刷新。额外提供手动刷新按钮。
+- **[M20] 问题项跳转定位**：点击问题项 → 调用 `ProjectStore.setActiveStage(item.stage)` 切换阶段标签页。不做行级滚动定位（MVP 限制），用户切换阶段后自行查找对应项。
+
+### Reviewer 提醒
+
+- **[Low] 面板宽度**：右侧侧边栏默认宽度 320px，折叠时仅显示一个带计数 badge 的图标按钮（24px）。
+- **[Low] 问题分组排序**：按 stage 出现顺序排列（import → normalize → grouping → compliance → comparison），同 stage 内按 type 首字母排序。

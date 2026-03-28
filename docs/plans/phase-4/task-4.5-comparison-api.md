@@ -3,6 +3,7 @@
 ## 输入条件
 
 - Task 4.4 完成（PriceComparator + ComparisonRepo + ComparisonService 可用）
+- Task 4.3 完成（ComplianceRepo 可用 — ComparisonService._get_eligible_supplier_ids() 依赖 ComplianceRepo）  <!-- [C7-fix] 补充实际依赖 -->
 - TaskManager 异步框架可用（Phase 1 已建好）
 
 ## 输出物
@@ -153,3 +154,14 @@ git add backend/api/comparison.py backend/main.py \
        backend/tests/test_comparison_api.py
 git commit -m "Phase 4.5: 比价 API — generate/get 路由 + 异步任务"
 ```
+
+## Review Notes（审查发现的 Medium/Low 问题）
+
+### 实现约束（开发时必须处理）
+
+- **[M10] POST /generate 缺错误处理**：应对以下情况返回 HTTP 错误：项目不存在(404)、无归组数据(422, "请先完成商品归组")。
+- **[M11] 异步任务轮询说明**：导出/比价等异步任务统一使用 Phase 1 的 `GET /api/tasks/{task_id}/status` 查询状态，无需在本 Task 新增端点。前端轮询间隔建议 2 秒，超时 300 秒。
+
+### Reviewer 提醒
+
+- **[Low] 并发 generate 请求**：多次调用 generate 会清除旧结果，无去重机制。MVP 可接受，前端通过 disabled 按钮防止重复点击。

@@ -32,44 +32,48 @@
 ### types/comparison.ts
 
 ```typescript
+// 注意：后端使用 _CAMEL_CONFIG，API JSON 字段名为 camelCase
+
 export interface SupplierPrice {
-  supplier_file_id: string;
-  supplier_name: string;
-  unit_price: number | null;
-  total_price: number | null;
-  compliance_status?: string | null;
-  is_acceptable?: boolean | null;
+  supplierFileId: string;
+  supplierName: string;
+  unitPrice: number | null;
+  totalPrice: number | null;
+  taxBasis?: string | null;        // [C12-fix] 与后端 SupplierPrice 模型对齐
+  unit?: string | null;            // 单字段无需转换
+  complianceStatus?: string | null;
+  isAcceptable?: boolean | null;
 }
 
 export interface AnomalyDetail {
   type: 'tax_basis_mismatch' | 'unit_mismatch' | 'currency_mismatch' | 'missing_required_field';
   description: string;
   blocking: boolean;
-  affected_suppliers: string[];
+  affectedSuppliers: string[];
 }
 
 export interface ComparisonResult {
   id: string;
-  group_id: string;
-  group_name: string;
-  project_id: string;
-  comparison_status: 'comparable' | 'blocked' | 'partial';
-  supplier_prices: SupplierPrice[];
-  min_price: number | null;
-  effective_min_price: number | null;
-  max_price: number | null;
-  avg_price: number | null;
-  price_diff: number | null;
-  has_anomaly: boolean;
-  anomaly_details: AnomalyDetail[];
-  missing_suppliers: string[];
-  generated_at: string;
+  groupId: string;
+  groupName: string;
+  projectId: string;
+  comparisonStatus: 'comparable' | 'blocked' | 'partial';
+  supplierPrices: SupplierPrice[];
+  minPrice: number | null;
+  effectiveMinPrice: number | null;
+  maxPrice: number | null;
+  avgPrice: number | null;
+  priceDiff: number | null;
+  hasAnomaly: boolean;
+  anomalyDetails: AnomalyDetail[];
+  missingSuppliers: string[];
+  generatedAt: string;
 }
 
 export interface ExportResult {
-  file_path: string;
-  file_name: string;
-  sheet_count: number;
+  filePath: string;
+  fileName: string;
+  sheetCount: number;
 }
 ```
 
@@ -83,7 +87,7 @@ interface ComparisonStore {
   results: ComparisonResult[];
   isGenerating: boolean;
   isExporting: boolean;
-  exportTaskId: string | null;
+  exportTaskId: string | null;  // API 返回的 taskId
   isLoading: boolean;
 
   loadResults: (projectId: string) => Promise<void>;
@@ -102,18 +106,48 @@ interface ComparisonStore {
 - 有结果时显示 ComparisonTable
 
 #### comparison-table.tsx（TanStack Table）
-- 列结构：
-  - 固定列：商品组名称、比较状态
-  - 动态列：每个供应商一列（单价），根据实际供应商数量动态生成
-  - 汇总列：全量最低价、有效最低价、最高价、平均价、差额
-  - 标记列：异常标记
-- 条件样式：
-  - 全量最低价供应商单元格 → 绿色背景
-  - 有效最低价供应商单元格 → 蓝色边框（若与全量最低价不同）
-  - blocked 行 → 红色左边框
-  - partial 行 → 黄色左边框
-  - 缺项供应商 → 灰色斜线背景
-- 行展开：点击行可展开查看异常详情
+
+**[C10-fix] 列结构与固定范围：**
+- 左侧固定列（`position: sticky; left: 0`，共 2 列，总宽 ~320px）：
+  - 商品组名称（`minWidth: 200px`）
+  - 比较状态（`minWidth: 120px`，badge 形式：comparable=绿色/blocked=红色/partial=黄色）
+- 中间动态列（可横向滚动）：
+  - 每个供应商一列（`minWidth: 140px`），列头显示供应商名称
+  - 列顺序：按 `supplier_prices` 数组顺序（由后端保证按 supplier_file_id 排序）
+- 右侧汇总列（共 6 列）：
+  - 全量最低价、有效最低价、最高价、平均价、差额、异常标记
+- 表格容器 `overflow-x: auto`，左侧固定列不随滚动
+
+**[C10-fix] 条件样式与双口径高亮伪代码：**
+```typescript
+// 供应商单价单元格样式
+function getSupplierCellClass(unitPrice: number | null, row: ComparisonResult): string {
+  if (unitPrice === null) return 'bg-gray-100 bg-stripes';  // 缺项：灰色斜线背景
+  const isMinPrice = unitPrice === row.minPrice;
+  const isEffectiveMin = unitPrice === row.effectiveMinPrice;
+  const effectiveDiffersFromMin = row.effectiveMinPrice !== null
+    && row.effectiveMinPrice !== row.minPrice;
+
+  if (isEffectiveMin && effectiveDiffersFromMin) {
+    return 'ring-2 ring-blue-500 bg-blue-50';  // 有效最低价≠全量最低价 → 蓝色边框
+  }
+  if (isMinPrice) {
+    return 'bg-green-100';  // 全量最低价 → 绿色背景
+  }
+  return '';
+}
+
+// 行样式
+function getRowClass(row: ComparisonResult): string {
+  if (row.comparisonStatus === 'blocked') return 'border-l-4 border-l-red-500';
+  if (row.comparisonStatus === 'partial') return 'border-l-4 border-l-yellow-500';
+  return '';
+}
+```
+
+**注意：** 无需求标准时 `effective_min_price === min_price`，`effectiveDiffersFromMin` 为 false，不显示蓝色边框（正确行为）。
+
+- 行展开：点击行可展开查看异常详情（展开状态用组件本地 `useState<Set<string>>` 管理，不存 store）
 
 #### anomaly-highlight.tsx
 - 异常行的内嵌组件
@@ -133,11 +167,11 @@ interface ComparisonStore {
 
 ```typescript
 // 比价
-generateComparison(projectId: string): Promise<{ task_id: string }>
+generateComparison(projectId: string): Promise<{ taskId: string }>
 getComparison(projectId: string): Promise<ComparisonResult[]>
 
 // 导出
-exportReport(projectId: string): Promise<{ task_id: string }>
+exportReport(projectId: string): Promise<{ taskId: string }>
 ```
 
 ## 测试与验收
@@ -183,3 +217,16 @@ git add frontend/src/components/stages/comparison-stage.tsx \
        frontend/src/app/project-workbench.tsx
 git commit -m "Phase 4.9: ComparisonStage — TanStack Table 比价结果 + 异常高亮 + 导出按钮(异步)"
 ```
+
+## Review Notes（审查发现的 Medium/Low 问题）
+
+### 实现约束（开发时必须处理）
+
+- **[M17] 导出进度轮询参数**：轮询间隔 2 秒，超时 300 秒，超时后显示"导出超时，请重试"。导出中不可取消（MVP 限制），按钮 disabled + spinner。
+- **[M18] 供应商列顺序**：后端 ComparisonResultResponse.supplier_prices 按 supplier_file_id 排序（见 task-4.4 `sorted_sids`），前端按此顺序渲染列。列头显示 supplier_name。
+
+### Reviewer 提醒
+
+- **[M16] 行展开状态管理**：用组件本地 `useState<Set<string>>` 管理展开的行 ID 集合，不存入 store。
+- **[Low] 空状态处理**：生成失败时显示 toast 错误提示（从 task status API 获取错误信息）。
+- **[Low] 导出文件交付方式**：后端返回 file_path（服务器本地路径），Tauri 应用通过 Rust 端打开文件所在目录。开发模式下直接显示路径文本。

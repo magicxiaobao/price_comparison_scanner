@@ -702,3 +702,13 @@ git add backend/db/requirement_repo.py backend/engines/compliance_evaluator.py \
        backend/tests/test_requirement_repo.py backend/tests/test_requirements_api.py
 git commit -m "Phase 4.1: 需求标准 CRUD + 导入导出 — RequirementRepo + ComplianceEvaluator(解析) + ComplianceService + API"
 ```
+
+## Review Notes（审查发现的 Medium/Low 问题）
+
+### 实现约束（开发时必须处理）
+
+- **[M3] `export_requirements` 需创建导出目录**：`output_path` 的父目录可能不存在，实现时须在写文件前调用 `Path(output_path).parent.mkdir(parents=True, exist_ok=True)`。
+
+### Reviewer 提醒
+
+- **[Low] `_generate_code` 并发风险**：通过 `count_by_project + 1` 生成编号，批量导入时若并发调用可能生成重复编号。MVP 可接受，后续版本可改用数据库序列或 UUID 编号。

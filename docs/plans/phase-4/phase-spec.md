@@ -120,7 +120,8 @@ frontend/src/
                     │         │                                                       │    │
 Phase 3 ───────────┤         │                                                       │    ├── 4.6 ReportGenerator
                     │         │                                                       │    │         │
-                    │         └── 4.4 PriceComparator ───── 4.5 比价 API ──────────────┘    │         │
+                    │         └── 4.4 PriceComparator ──┬── 4.5 比价 API ──────────────┘    │         │
+                    │                                  │  (4.5 也依赖 4.3)                  │         │
                     │                                                                      │         │
                     │                                                             4.7 问题清单 API ──── 4.12 openapi
                     │                                                                      │
@@ -141,7 +142,7 @@ Phase 3 ───────────┤         │                        
 | 4.2 | ComplianceEvaluator — 符合性匹配（keyword/numeric/manual） | backend-dev | 4.1 |
 | 4.3 | 符合性 API（匹配 + 矩阵 + 确认 + 可接受标记） | backend-dev | 4.2 |
 | 4.4 | PriceComparator — 比价计算 + 异常检测 + 双口径最低价 | backend-dev | Phase 3, 4.11 |
-| 4.5 | 比价 API | backend-dev | 4.4 |
+| 4.5 | 比价 API | backend-dev | 4.3, 4.4 |
 | 4.6 | ReportGenerator — 4 Sheet Excel 导出 | backend-dev | 4.3, 4.5 |
 | 4.7 | 待处理问题清单 API | backend-dev | 4.3, 4.5 |
 | 4.8 | 前端 ComplianceStage — 需求录入 + 符合性矩阵 + 证据面板 | frontend-dev | 4.3 |
@@ -152,7 +153,7 @@ Phase 3 ───────────┤         │                        
 
 **并行化：**
 - 4.11（Pydantic 模型）可最先启动，与其他后端任务并行
-- 4.1-4.3（符合性链路）与 4.4-4.5（比价链路）可并行开发
+- 4.1-4.3（符合性链路）与 4.4（比价引擎）可并行开发；4.5（比价 API）依赖 4.3 和 4.4 都完成（因 ComparisonService 调用 ComplianceRepo）
 - 4.6（ReportGenerator）依赖 4.3 和 4.5 都完成
 - 4.7（问题清单）依赖 4.3 和 4.5 都完成
 - 4.8/4.9/4.10 前端任务分别等待各自对应的后端 API 就绪

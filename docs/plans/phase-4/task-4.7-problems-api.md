@@ -214,42 +214,75 @@ class ProblemService:
             ]
 
     def _unmapped_fields(self, project_id: str) -> list[ProblemItem]:
+        """
+        [C4-fix] standardized_rows 表无 has_unmapped_fields 列。
+        改用 column_mapping JSON 字段判断：若 column_mapping 包含空映射值（某标准字段未找到对应原始列），
+        则视为有未映射字段。具体逻辑：column_mapping 中值为 null 或空字符串的 key 即为未映射。
+        """
+        import json as _json
         with self.db.read() as conn:
             cursor = conn.execute(
-                """SELECT sr.id, sr.product_name FROM standardized_rows sr
+                """SELECT sr.id, sr.product_name, sr.column_mapping FROM standardized_rows sr
                    JOIN raw_tables rt ON rt.id = sr.raw_table_id
                    JOIN supplier_files sf ON sf.id = rt.supplier_file_id
-                   WHERE sf.project_id = ? AND sr.has_unmapped_fields = 1""",
+                   WHERE sf.project_id = ? AND sr.column_mapping IS NOT NULL""",
                 (project_id,),
             )
-            return [
-                ProblemItem(id=row[0], stage="normalize", target_id=row[0],
-                            description=f"行「{row[1] or '未知'}」存在未映射字段")
-                for row in cursor.fetchall()
-            ]
+            items = []
+            for row in cursor.fetchall():
+                mapping = _json.loads(row[2] or "{}")
+                unmapped = [k for k, v in mapping.items() if not v]
+                if unmapped:
+                    items.append(ProblemItem(
+                        id=row[0], stage="normalize", target_id=row[0],
+                        description=f"行「{row[1] or '未知'}」存在未映射字段: {', '.join(unmapped)}",
+                    ))
+            return items
 
     def _rule_conflicts(self, project_id: str) -> list[ProblemItem]:
+        """
+        [C4-fix] standardized_rows 表无 has_rule_conflict 列。
+        改用 hit_rule_snapshots JSON 字段判断：若同一标准字段被多条规则命中（snapshot 数组中
+        同一 target_field 出现 >1 次），视为规则冲突。
+        """
+        import json as _json
         with self.db.read() as conn:
             cursor = conn.execute(
-                """SELECT sr.id, sr.product_name FROM standardized_rows sr
+                """SELECT sr.id, sr.product_name, sr.hit_rule_snapshots FROM standardized_rows sr
                    JOIN raw_tables rt ON rt.id = sr.raw_table_id
                    JOIN supplier_files sf ON sf.id = rt.supplier_file_id
-                   WHERE sf.project_id = ? AND sr.has_rule_conflict = 1""",
+                   WHERE sf.project_id = ? AND sr.hit_rule_snapshots IS NOT NULL""",
                 (project_id,),
             )
-            return [
-                ProblemItem(id=row[0], stage="normalize", target_id=row[0],
-                            description=f"行「{row[1] or '未知'}」存在规则冲突")
-                for row in cursor.fetchall()
-            ]
+            items = []
+            for row in cursor.fetchall():
+                snapshots = _json.loads(row[2] or "[]")
+                fields_hit: dict[str, int] = {}
+                for s in snapshots:
+                    tf = s.get("target_field", "")
+                    if tf:
+                        fields_hit[tf] = fields_hit.get(tf, 0) + 1
+                conflicts = [f for f, c in fields_hit.items() if c > 1]
+                if conflicts:
+                    items.append(ProblemItem(
+                        id=row[0], stage="normalize", target_id=row[0],
+                        description=f"行「{row[1] or '未知'}」存在规则冲突: {', '.join(conflicts)}",
+                    ))
+            return items
 
     def _low_confidence_unconfirmed(self, project_id: str) -> list[ProblemItem]:
+        """
+        [C4-fix] standardized_rows 表无 is_confirmed 列。
+        改用已有字段: confidence < 0.8 且 needs_review = 1 且 is_manually_modified = 0
+        （未经人工修改且需要复核的低置信行）。
+        """
         with self.db.read() as conn:
             cursor = conn.execute(
                 """SELECT sr.id, sr.product_name, sr.confidence FROM standardized_rows sr
                    JOIN raw_tables rt ON rt.id = sr.raw_table_id
                    JOIN supplier_files sf ON sf.id = rt.supplier_file_id
-                   WHERE sf.project_id = ? AND sr.confidence < 0.8 AND sr.is_confirmed = 0""",
+                   WHERE sf.project_id = ? AND sr.confidence < 0.8
+                     AND sr.needs_review = 1 AND sr.is_manually_modified = 0""",
                 (project_id,),
             )
             return [

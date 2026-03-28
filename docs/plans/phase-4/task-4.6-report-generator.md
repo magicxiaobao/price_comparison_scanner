@@ -590,3 +590,14 @@ git add backend/engines/report_generator.py backend/services/report_service.py \
        backend/tests/test_report_generator.py backend/tests/test_export_api.py
 git commit -m "Phase 4.6: ReportGenerator — 4 Sheet Excel 导出（比价结果/标准化/追溯/符合性矩阵）+ 条件格式"
 ```
+
+## Review Notes（审查发现的 Medium/Low 问题）
+
+### 实现约束（开发时必须处理）
+
+- **[C12 关联] `_write_comparison_sheet` 数据格式**：ReportGenerator 从 DB 直接读取 comparison_results 行，`supplier_prices` 是 JSON 字符串需 `json.loads`。但经过 C12 修复后 JSON 中已包含 `tax_basis` 和 `unit` 字段，可直接读取。
+
+### Reviewer 提醒
+
+- **[Low] `_write_traceability_sheet` 追溯字段**：追溯表使用 `is_confirmed` / `is_modified` key，但 standardized_rows 表实际字段名是 `is_manually_modified`。实现时须确保 `_get_traceability_data` 返回的 dict key 与追溯表列 key 映射正确（可在 SQL 查询中用 AS 别名）。
+- **[Low] ExportResponse vs ExportResult 命名**：两个模型职责分离正确 —— ExportResponse 用于异步任务提交响应，ExportResult 用于任务完成后的结果。无需修改。

@@ -31,19 +31,21 @@
 ### types/compliance.ts
 
 ```typescript
+// 注意：后端使用 _CAMEL_CONFIG，API JSON 字段名为 camelCase
+
 export interface RequirementItem {
   id: string;
-  project_id: string;
+  projectId: string;
   code: string | null;
   category: '功能要求' | '技术规格' | '商务条款' | '服务要求' | '交付要求';
   title: string;
   description: string | null;
-  is_mandatory: boolean;
-  match_type: 'keyword' | 'numeric' | 'manual';
-  expected_value: string | null;
+  isMandatory: boolean;
+  matchType: 'keyword' | 'numeric' | 'manual';
+  expectedValue: string | null;
   operator: 'gte' | 'lte' | 'eq' | 'range' | null;
-  sort_order: number;
-  created_at: string;
+  sortOrder: number;
+  createdAt: string;
 }
 
 export interface RequirementCreate {
@@ -51,18 +53,18 @@ export interface RequirementCreate {
   category: string;
   title: string;
   description?: string;
-  is_mandatory?: boolean;
-  match_type: string;
-  expected_value?: string;
+  isMandatory?: boolean;
+  matchType: string;
+  expectedValue?: string;
   operator?: string;
 }
 
 export interface ComplianceMatrixCell {
-  match_id: string;
+  matchId: string;
   status: 'match' | 'partial' | 'no_match' | 'unclear';
-  is_acceptable: boolean;
-  needs_review: boolean;
-  evidence_text: string | null;
+  isAcceptable: boolean;
+  needsReview: boolean;
+  evidenceText: string | null;
 }
 
 export interface ComplianceMatrixRow {
@@ -71,7 +73,7 @@ export interface ComplianceMatrixRow {
 }
 
 export interface ComplianceMatrix {
-  supplier_names: Record<string, string>;
+  supplierNames: Record<string, string>;
   rows: ComplianceMatrixRow[];
 }
 
@@ -116,7 +118,30 @@ interface ComplianceStore {
 - 每行显示：编号、分类（下拉选择）、标题、是否必选（开关）、判断类型（下拉）、目标值、操作符
 - 新增行按钮（底部）
 - 删除按钮（每行末尾）
-- 表单校验：title 必填，category 必须是枚举值，match_type 必须是枚举值
+- 表单校验（[C9-fix] 完整 Zod schema）：
+  ```typescript
+  const requirementSchema = z.object({
+    category: z.enum(['功能要求', '技术规格', '商务条款', '服务要求', '交付要求']),
+    title: z.string().min(1, '标题不能为空').max(500),
+    description: z.string().optional(),
+    is_mandatory: z.boolean().default(true),
+    match_type: z.enum(['keyword', 'numeric', 'manual']),
+    expected_value: z.string().optional(),
+    operator: z.enum(['gte', 'lte', 'eq', 'range']).optional(),
+  }).refine(
+    (data) => {
+      // numeric 类型必须有 expected_value（数字格式）和 operator
+      if (data.match_type === 'numeric') {
+        if (!data.expected_value || !/^[\d.]+(-[\d.]+)?$/.test(data.expected_value)) return false;
+        if (!data.operator) return false;
+      }
+      // keyword 类型必须有 expected_value（关键词）
+      if (data.match_type === 'keyword' && !data.expected_value) return false;
+      return true;
+    },
+    { message: '请根据判断类型填写完整的目标值和操作符' }
+  );
+  ```
 
 #### requirement-importer.tsx
 - 文件上传区域（拖拽或点击选择 .xlsx 文件）
@@ -125,11 +150,11 @@ interface ComplianceStore {
 
 #### compliance-matrix.tsx
 - 矩阵表格：横轴为供应商，纵轴为需求项
-- 单元格颜色编码：
-  - match → 绿色
-  - partial → 黄色
-  - no_match → 红色
-  - unclear → 灰色
+- 单元格颜色编码（[C8-fix] 明确 Tailwind 类名）：
+  - match → `bg-green-100 text-green-800 border-green-300`
+  - partial → `bg-yellow-100 text-yellow-800 border-yellow-300`
+  - no_match → `bg-red-100 text-red-800 border-red-300`
+  - unclear → `bg-gray-100 text-gray-500 border-gray-300`
 - 单元格点击 → 弹出确认对话框（可修改 status）
 - partial 行显示「标记可接受」开关
 - needs_review 行有待确认标记（闪烁或图标）
@@ -156,10 +181,10 @@ importRequirements(projectId: string, file: File): Promise<RequirementImportResu
 exportRequirements(projectId: string): Promise<Blob>
 
 // 符合性
-evaluateCompliance(projectId: string): Promise<{ task_id: string }>
+evaluateCompliance(projectId: string): Promise<{ taskId: string }>
 getComplianceMatrix(projectId: string): Promise<ComplianceMatrix>
-confirmMatch(matchId: string, status: string): Promise<void>
-acceptMatch(matchId: string, isAcceptable: boolean): Promise<void>
+confirmMatch(matchId: string, projectId: string, status: string): Promise<void>   // body: { projectId, status }
+acceptMatch(matchId: string, projectId: string, isAcceptable: boolean): Promise<void>  // body: { projectId, isAcceptable }
 ```
 
 ## 测试与验收
@@ -211,3 +236,17 @@ git add frontend/src/components/stages/compliance-stage.tsx \
        frontend/src/app/project-workbench.tsx
 git commit -m "Phase 4.8: ComplianceStage — 需求录入表格 + 符合性矩阵(颜色编码) + 证据面板 + 导入导出"
 ```
+
+## Review Notes（审查发现的 Medium/Low 问题）
+
+### 实现约束（开发时必须处理）
+
+- **[M13] 矩阵交互流程明确**：单元格点击 → 打开右侧 EvidenceDetailPanel（显示证据+确认按钮）；行级别不做展开。状态修改（confirm/accept）在证据面板中操作，不在矩阵单元格上直接修改。
+- **[M14] 证据面板数据来源**：所有证据字段（evidence_text, evidence_location, match_method, match_score, needs_review）来自后端 GET /compliance/matrix 响应中的 ComplianceMatrixCell。若需要更完整的证据，可通过 match_id 查询单条记录。
+- **[M15] 需求导入 Excel 模板列结构**：列顺序为 `[分类, 标题, 描述, 是否必选, 判断类型, 目标值, 操作符]`。导入时按表头匹配（不依赖列序号）。「导出模板」功能会生成带表头的空模板 + 1 行示例数据。
+- **[M13 补充] `confirmMatch` / `acceptMatch` API 调用需带 project_id**：请求体格式为 `{ project_id, status }` 和 `{ project_id, is_acceptable }`。
+
+### Reviewer 提醒
+
+- **[Low] 需求项拖拽排序不在 Phase 4 范围**：sort_order 字段由后端自动递增，前端不提供拖拽排序。后续版本可实现。
+- **[Low] 导入错误信息格式**：errors 数组元素为纯文本字符串（如 "第3行: 分类无效"），包含行号和错误原因。
