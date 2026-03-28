@@ -1,4 +1,5 @@
 import hmac
+import logging
 
 from fastapi import Request
 from fastapi.responses import JSONResponse
@@ -7,12 +8,42 @@ from starlette.middleware.base import BaseHTTPMiddleware
 import config
 from config import error_logger
 
+# 全量请求日志（写入 access.log）
+_access_logger: logging.Logger | None = None
+
+
+def _get_access_logger() -> logging.Logger:
+    global _access_logger
+    if _access_logger is None:
+        from config import get_app_data_dir
+        log_dir = get_app_data_dir() / "logs"
+        log_dir.mkdir(parents=True, exist_ok=True)
+        _access_logger = logging.getLogger("price-comparison-access")
+        handler = logging.FileHandler(log_dir / "access.log", encoding="utf-8")
+        handler.setFormatter(logging.Formatter(
+            "%(asctime)s %(message)s", datefmt="%Y-%m-%d %H:%M:%S",
+        ))
+        _access_logger.addHandler(handler)
+        _access_logger.setLevel(logging.INFO)
+    return _access_logger
+
+
 # 不需要认证的路径前缀
 PUBLIC_PREFIXES = ("/api/health", "/docs", "/redoc", "/openapi.json")
 
 
 class SessionTokenMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):  # type: ignore[override]
+        # 记录所有请求到 access.log
+        access = _get_access_logger()
+        access.info(
+            "%s %s auth=%s ua=%s origin=%s",
+            request.method, request.url.path,
+            "yes" if request.headers.get("Authorization") else "no",
+            request.headers.get("user-agent", "?")[:40],
+            request.headers.get("origin", "none"),
+        )
+
         # 开发模式跳过认证
         if config.settings.DEV_MODE:
             return await call_next(request)
