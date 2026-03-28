@@ -143,6 +143,7 @@ export const useComplianceStore = create<ComplianceState>((set, get) => ({
     try {
       await confirmMatch(matchId, projectId, status);
       await get().loadMatrix(projectId);
+      await useProjectStore.getState().refreshProblems(projectId);
     } catch (e) {
       set({ error: e instanceof Error ? e.message : "确认匹配状态失败" });
     }
@@ -152,6 +153,7 @@ export const useComplianceStore = create<ComplianceState>((set, get) => ({
     try {
       await acceptMatch(matchId, projectId, isAcceptable);
       await get().loadMatrix(projectId);
+      await useProjectStore.getState().refreshProblems(projectId);
     } catch (e) {
       set({ error: e instanceof Error ? e.message : "标记可接受失败" });
     }
