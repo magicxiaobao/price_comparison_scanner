@@ -43,8 +43,8 @@ const client = axios.create({
   headers: { "Content-Type": "application/json" },
 });
 
-/** 配置 Tauri 模式的连接信息（Phase 5 Tauri 集成时调用） */
-export function configureTauriConnection(port: number, token: string): void {
+/** 配置 Tauri 模式的连接信息 */
+function configureTauriConnection(port: number, token: string): void {
   client.defaults.baseURL = `http://127.0.0.1:${port}`;
   client.defaults.headers.common["Authorization"] = `Bearer ${token}`;
 }
@@ -53,6 +53,27 @@ export function configureTauriConnection(port: number, token: string): void {
 const devToken = import.meta.env.VITE_DEV_TOKEN;
 if (devToken) {
   client.defaults.headers.common["Authorization"] = `Bearer ${devToken}`;
+}
+
+interface SidecarInfo {
+  port: number;
+  token: string;
+}
+
+/**
+ * 统一 API 连接初始化。
+ * - Tauri 模式：通过 invoke 从 Rust 端获取 sidecar 的 port 和 token
+ * - 开发模式：保持现有逻辑（Vite proxy + VITE_DEV_TOKEN 环境变量）
+ *
+ * 必须在 React 渲染前调用。
+ */
+export async function initApiConnection(): Promise<void> {
+  const { isTauri } = await import("@tauri-apps/api/core");
+  if (isTauri()) {
+    const { invoke } = await import("@tauri-apps/api/core");
+    const info = await invoke<SidecarInfo>("get_sidecar_info");
+    configureTauriConnection(info.port, info.token);
+  }
 }
 
 // ---- 项目 API ----
