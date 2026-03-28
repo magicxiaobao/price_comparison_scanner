@@ -158,7 +158,7 @@ fn start_sidecar_with<R: Runtime>(
 
     let (mut rx, child) = app
         .shell()
-        .sidecar("binaries/backend")
+        .sidecar("backend")
         .map_err(|e| format!("创建 sidecar 命令失败: {}", e))?
         .args([
             "--host",
