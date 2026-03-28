@@ -1,0 +1,87 @@
+{
+  "test": "DS-1 E2E v3",
+  "timestamp": "2026-03-28T17:07:18",
+  "summary": {
+    "passed": 15,
+    "failed": 0,
+    "total": 15
+  },
+  "results": [
+    {
+      "name": "创建项目",
+      "status": "PASS",
+      "detail": "http://localhost:5173/#/project/45f9d359-10c6-4ab4-9470-1069db68c755"
+    },
+    {
+      "name": "上传 3 文件",
+      "status": "PASS",
+      "detail": "3 文件"
+    },
+    {
+      "name": "联想出现",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "华硕出现",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "戴尔出现",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "确认供应商",
+      "status": "PASS",
+      "detail": "确认了 3 个"
+    },
+    {
+      "name": "执行标准化",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "标准化有数据",
+      "status": "PASS",
+      "detail": "有商品数据"
+    },
+    {
+      "name": "执行归组",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "归组结果",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "确认归组",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "生成比价",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "比价结果",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "导出完成",
+      "status": "PASS",
+      "detail": "有成功提示"
+    },
+    {
+      "name": "问题面板",
+      "status": "PASS",
+      "detail": "页面有问题相关文字"
+    }
+  ],
+  "screenshot_dir": "/tmp/e2e-screenshots/ds1-v3"
+}

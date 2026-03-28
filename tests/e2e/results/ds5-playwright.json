@@ -1,0 +1,82 @@
+{
+  "test": "DS-5 E2E OCR Path",
+  "timestamp": "2026-03-28T17:06:47",
+  "summary": {
+    "passed": 14,
+    "failed": 0,
+    "total": 14
+  },
+  "results": [
+    {
+      "name": "创建项目",
+      "status": "PASS",
+      "detail": "http://localhost:5173/#/project/1f69af1b-1e53-42a0-8f6d-ec91a5021514"
+    },
+    {
+      "name": "上传 2 文件",
+      "status": "PASS",
+      "detail": "实际 2 文件: ['扫描版报价单.pdf', '标准供应商A.xlsx']"
+    },
+    {
+      "name": "OCR 降级提示",
+      "status": "PASS",
+      "detail": "检测到 OCR 相关提示"
+    },
+    {
+      "name": "提示框元素存在",
+      "status": "PASS",
+      "detail": "找到 2 个提示元素"
+    },
+    {
+      "name": "页面未崩溃",
+      "status": "PASS",
+      "detail": "http://localhost:5173/#/project/1f69af1b-1e53-42a0-8f6d-ec91a5021514"
+    },
+    {
+      "name": "无 Error Boundary",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "无崩溃文字",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "xlsx 文件可见",
+      "status": "PASS",
+      "detail": "检测到 xlsx 相关内容"
+    },
+    {
+      "name": "文件条目可见",
+      "status": "PASS",
+      "detail": "4 个条目"
+    },
+    {
+      "name": "确认供应商",
+      "status": "PASS",
+      "detail": "确认了 2 个"
+    },
+    {
+      "name": "标准化有数据",
+      "status": "PASS",
+      "detail": "有数据（至少 xlsx 部分成功）"
+    },
+    {
+      "name": "PDF 部分失败提示",
+      "status": "PASS",
+      "detail": "有部分失败/跳过提示"
+    },
+    {
+      "name": "最终页面稳定",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "Tab 切换正常",
+      "status": "PASS",
+      "detail": ""
+    }
+  ],
+  "screenshot_dir": "/tmp/e2e-screenshots/ds5"
+}

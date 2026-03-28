@@ -1,0 +1,194 @@
+{
+  "project_id": "f20e75f8-1f5e-4e6e-9488-81f8e5ea5442",
+  "results": [
+    {
+      "name": "health API",
+      "status": "PASS",
+      "detail": "200 {'status': 'ok'}"
+    },
+    {
+      "name": "创建项目",
+      "status": "PASS",
+      "detail": "200"
+    },
+    {
+      "name": "上传 华硕经销-办公设备报价单.xlsx",
+      "status": "PASS",
+      "detail": "200, task=1078348e..."
+    },
+    {
+      "name": "上传 戴尔直销-报价函.xlsx",
+      "status": "PASS",
+      "detail": "200, task=8dc94b4a..."
+    },
+    {
+      "name": "上传 联想科技-办公设备报价.xlsx",
+      "status": "PASS",
+      "detail": "200, task=e0e2751f..."
+    },
+    {
+      "name": "解析 1078348e...",
+      "status": "PASS",
+      "detail": "completed"
+    },
+    {
+      "name": "解析 8dc94b4a...",
+      "status": "PASS",
+      "detail": "completed"
+    },
+    {
+      "name": "解析 e0e2751f...",
+      "status": "PASS",
+      "detail": "completed"
+    },
+    {
+      "name": "获取文件列表",
+      "status": "PASS",
+      "detail": "200, 文件数=3"
+    },
+    {
+      "name": "表格 Sheet1 已选中",
+      "status": "PASS",
+      "detail": "skip"
+    },
+    {
+      "name": "表格 报价表 已选中",
+      "status": "PASS",
+      "detail": "skip"
+    },
+    {
+      "name": "表格 报价明细 已选中",
+      "status": "PASS",
+      "detail": "skip"
+    },
+    {
+      "name": "触发标准化",
+      "status": "PASS",
+      "detail": "task=3c5f3387..."
+    },
+    {
+      "name": "标准化完成",
+      "status": "PASS",
+      "detail": "completed"
+    },
+    {
+      "name": "获取标准化行",
+      "status": "PASS",
+      "detail": "200, 15 行"
+    },
+    {
+      "name": "获取列映射信息",
+      "status": "PASS",
+      "detail": "200"
+    },
+    {
+      "name": "触发归组",
+      "status": "PASS",
+      "detail": "task=b5448b09..."
+    },
+    {
+      "name": "归组完成",
+      "status": "PASS",
+      "detail": "completed"
+    },
+    {
+      "name": "获取归组列表",
+      "status": "PASS",
+      "detail": "200, 13 组"
+    },
+    {
+      "name": "确认组 ?",
+      "status": "FAIL",
+      "detail": "422"
+    },
+    {
+      "name": "确认组 ?",
+      "status": "FAIL",
+      "detail": "422"
+    },
+    {
+      "name": "确认组 ?",
+      "status": "FAIL",
+      "detail": "422"
+    },
+    {
+      "name": "确认组 ?",
+      "status": "FAIL",
+      "detail": "422"
+    },
+    {
+      "name": "确认组 ?",
+      "status": "FAIL",
+      "detail": "422"
+    },
+    {
+      "name": "确认组 ?",
+      "status": "FAIL",
+      "detail": "422"
+    },
+    {
+      "name": "确认组 ?",
+      "status": "FAIL",
+      "detail": "422"
+    },
+    {
+      "name": "确认组 ?",
+      "status": "FAIL",
+      "detail": "422"
+    },
+    {
+      "name": "确认组 ?",
+      "status": "FAIL",
+      "detail": "422"
+    },
+    {
+      "name": "确认组 ?",
+      "status": "FAIL",
+      "detail": "422"
+    },
+    {
+      "name": "确认组 ?",
+      "status": "FAIL",
+      "detail": "422"
+    },
+    {
+      "name": "确认组 ?",
+      "status": "FAIL",
+      "detail": "422"
+    },
+    {
+      "name": "确认组 ?",
+      "status": "FAIL",
+      "detail": "422"
+    },
+    {
+      "name": "触发比价",
+      "status": "FAIL",
+      "detail": "422 {'detail': '请先完成商品归组'}"
+    },
+    {
+      "name": "获取比价结果",
+      "status": "PASS",
+      "detail": "200"
+    },
+    {
+      "name": "触发导出",
+      "status": "PASS",
+      "detail": "task=530f2d29..."
+    },
+    {
+      "name": "导出完成",
+      "status": "PASS",
+      "detail": "completed"
+    },
+    {
+      "name": "获取问题清单",
+      "status": "PASS",
+      "detail": "200, 2 组"
+    }
+  ],
+  "summary": {
+    "passed": 23,
+    "failed": 14
+  }
+}

@@ -1,0 +1,94 @@
+{
+  "test": "DS-2 混合格式 E2E",
+  "timestamp": "2026-03-28T17:00:00",
+  "summary": {
+    "passed": 14,
+    "failed": 0,
+    "total": 14
+  },
+  "results": [
+    {
+      "name": "创建项目",
+      "status": "PASS",
+      "detail": "http://localhost:5173/#/project/b70ef6c6-feeb-4f63-902b-f6479c44f1b6"
+    },
+    {
+      "name": "上传 3 混合格式文件",
+      "status": "PASS",
+      "detail": "3 文件: xlsx=True, docx=True, pdf=True"
+    },
+    {
+      "name": "优品办公出现",
+      "status": "PASS",
+      "detail": "优品办公 xlsx 解析成功"
+    },
+    {
+      "name": "佳美家具出现",
+      "status": "PASS",
+      "detail": "佳美家具 docx 解析成功"
+    },
+    {
+      "name": "宏远办公出现",
+      "status": "PASS",
+      "detail": "宏远办公 pdf 解析成功"
+    },
+    {
+      "name": "确认供应商",
+      "status": "PASS",
+      "detail": "确认了 3 个"
+    },
+    {
+      "name": "执行标准化",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "标准化有数据",
+      "status": "PASS",
+      "detail": "有商品数据"
+    },
+    {
+      "name": "执行归组",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "归组结果",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "确认归组",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "生成比价",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "比价结果",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "导出完成",
+      "status": "PASS",
+      "detail": "有成功提示"
+    }
+  ],
+  "screenshot_dir": "/tmp/e2e-screenshots/ds2",
+  "ds2_validation": {
+    "formats_tested": [
+      "xlsx",
+      "docx",
+      "pdf"
+    ],
+    "suppliers": [
+      "优品办公",
+      "佳美家具",
+      "宏远办公"
+    ]
+  }
+}

@@ -1,0 +1,143 @@
+{
+  "test": "DS-4 E2E 归组挑战",
+  "timestamp": "2026-03-28T17:10:20",
+  "summary": {
+    "passed": 24,
+    "failed": 0,
+    "total": 24
+  },
+  "ds4_focus": {
+    "brand_aliases": [
+      "cisco->思科",
+      "huawei->华为",
+      "hp->惠普",
+      "hikvision->海康威视"
+    ],
+    "expected_groups": 6,
+    "expected_high_confidence": 5,
+    "expected_medium_confidence": 1
+  },
+  "results": [
+    {
+      "name": "创建项目",
+      "status": "PASS",
+      "detail": "http://localhost:5173/#/project/59f59f90-8f1a-46b0-92eb-14c31f723464"
+    },
+    {
+      "name": "上传 3 文件",
+      "status": "PASS",
+      "detail": "3 文件"
+    },
+    {
+      "name": "文件解析完成",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "确认供应商",
+      "status": "PASS",
+      "detail": "确认了 3 个"
+    },
+    {
+      "name": "执行标准化",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "标准化有数据",
+      "status": "PASS",
+      "detail": "有网络设备数据"
+    },
+    {
+      "name": "执行归组",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "归组结果",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "品牌别名 cisco->思科",
+      "status": "PASS",
+      "detail": "归组名称含 '思科'"
+    },
+    {
+      "name": "品牌别名 huawei->华为",
+      "status": "PASS",
+      "detail": "归组名称含 '华为'"
+    },
+    {
+      "name": "品牌别名 hp->惠普",
+      "status": "PASS",
+      "detail": "归组名称含 '惠普'"
+    },
+    {
+      "name": "品牌别名 hikvision->海康威视",
+      "status": "PASS",
+      "detail": "归组名称含 '海康威视'"
+    },
+    {
+      "name": "归组-交换机组",
+      "status": "PASS",
+      "detail": "关键词命中"
+    },
+    {
+      "name": "归组-无线AP组",
+      "status": "PASS",
+      "detail": "关键词命中"
+    },
+    {
+      "name": "归组-服务器组",
+      "status": "PASS",
+      "detail": "关键词命中"
+    },
+    {
+      "name": "归组-路由器组",
+      "status": "PASS",
+      "detail": "关键词命中"
+    },
+    {
+      "name": "归组-摄像头组",
+      "status": "PASS",
+      "detail": "关键词命中"
+    },
+    {
+      "name": "归组-NVR组",
+      "status": "PASS",
+      "detail": "关键词命中"
+    },
+    {
+      "name": "归组数量>=6",
+      "status": "PASS",
+      "detail": "发现 6/6 组"
+    },
+    {
+      "name": "置信度显示",
+      "status": "PASS",
+      "detail": "有置信度信息"
+    },
+    {
+      "name": "确认归组",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "生成比价",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "比价结果",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "导出完成",
+      "status": "PASS",
+      "detail": "有成功提示"
+    }
+  ],
+  "screenshot_dir": "/tmp/e2e-screenshots/ds4"
+}

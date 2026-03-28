@@ -1,0 +1,103 @@
+{
+  "test": "DS-3 E2E 异常场景",
+  "timestamp": "2026-03-28T17:00:01",
+  "summary": {
+    "passed": 18,
+    "failed": 0,
+    "total": 18
+  },
+  "results": [
+    {
+      "name": "创建项目",
+      "status": "PASS",
+      "detail": "http://localhost:5173/#/project/af22c428-2c03-4e33-b801-3a612b84e175"
+    },
+    {
+      "name": "上传 4 文件",
+      "status": "PASS",
+      "detail": "实际 4 文件"
+    },
+    {
+      "name": "科达试剂出现",
+      "status": "PASS",
+      "detail": "页面含'科达'"
+    },
+    {
+      "name": "国药试剂出现",
+      "status": "PASS",
+      "detail": "页面含'国药'"
+    },
+    {
+      "name": "西陇试剂出现",
+      "status": "PASS",
+      "detail": "页面含'西陇'"
+    },
+    {
+      "name": "Sigma出现",
+      "status": "PASS",
+      "detail": "页面含'Sigma'"
+    },
+    {
+      "name": "确认供应商",
+      "status": "PASS",
+      "detail": "确认了 4 个（预期 4）"
+    },
+    {
+      "name": "执行标准化",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "标准化有数据",
+      "status": "PASS",
+      "detail": "有商品数据"
+    },
+    {
+      "name": "标准化异常标记",
+      "status": "PASS",
+      "detail": "检出关键词: ['异常', '问题', '税', '单位']"
+    },
+    {
+      "name": "执行归组",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "归组结果",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "确认归组",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "生成比价",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "比价结果",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "比价异常标记",
+      "status": "PASS",
+      "detail": "检出: ['异常']"
+    },
+    {
+      "name": "导出完成",
+      "status": "PASS",
+      "detail": "有成功提示"
+    },
+    {
+      "name": "问题/异常检出",
+      "status": "PASS",
+      "detail": "检出关键词: ['问题', '异常']"
+    }
+  ],
+  "screenshot_dir": "/tmp/e2e-screenshots/ds3",
+  "ds3_focus": "税价口径不一致、单位不一致、币种不一致、字段缺失"
+}
