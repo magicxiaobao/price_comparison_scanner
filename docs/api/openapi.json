@@ -1448,10 +1448,727 @@
           }
         }
       }
+    },
+    "/api/projects/{project_id}/requirements": {
+      "post": {
+        "tags": [
+          "需求标准"
+        ],
+        "summary": "Create Requirement",
+        "operationId": "create_requirement_api_projects__project_id__requirements_post",
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Project Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequirementCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "需求标准"
+        ],
+        "summary": "List Requirements",
+        "operationId": "list_requirements_api_projects__project_id__requirements_get",
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Project Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RequirementResponse"
+                  },
+                  "title": "Response List Requirements Api Projects  Project Id  Requirements Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/requirements/{req_id}": {
+      "put": {
+        "tags": [
+          "需求标准"
+        ],
+        "summary": "Update Requirement",
+        "description": "更新需求项。请求体含 project_id",
+        "operationId": "update_requirement_api_requirements__req_id__put",
+        "parameters": [
+          {
+            "name": "req_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Req Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequirementUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "需求标准"
+        ],
+        "summary": "Delete Requirement",
+        "description": "删除需求项。project_id 通过查询参数传入",
+        "operationId": "delete_requirement_api_requirements__req_id__delete",
+        "parameters": [
+          {
+            "name": "req_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Req Id"
+            }
+          },
+          {
+            "name": "project_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Project Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Delete Requirement Api Requirements  Req Id  Delete"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/projects/{project_id}/requirements/import": {
+      "post": {
+        "tags": [
+          "需求标准"
+        ],
+        "summary": "Import Requirements",
+        "description": "从模板 Excel 导入需求标准",
+        "operationId": "import_requirements_api_projects__project_id__requirements_import_post",
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Project Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_import_requirements_api_projects__project_id__requirements_import_post"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementImportResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/projects/{project_id}/requirements/export": {
+      "get": {
+        "tags": [
+          "需求标准"
+        ],
+        "summary": "Export Requirements",
+        "description": "导出需求标准模板 Excel",
+        "operationId": "export_requirements_api_projects__project_id__requirements_export_get",
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Project Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/projects/{project_id}/compliance/evaluate": {
+      "post": {
+        "tags": [
+          "符合性审查"
+        ],
+        "summary": "Evaluate Compliance",
+        "description": "执行符合性匹配（异步任务）",
+        "operationId": "evaluate_compliance_api_projects__project_id__compliance_evaluate_post",
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Project Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ComplianceEvaluateResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/projects/{project_id}/compliance/matrix": {
+      "get": {
+        "tags": [
+          "符合性审查"
+        ],
+        "summary": "Get Compliance Matrix",
+        "description": "获取符合性矩阵",
+        "operationId": "get_compliance_matrix_api_projects__project_id__compliance_matrix_get",
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Project Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ComplianceMatrixResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/compliance/{match_id}/confirm": {
+      "put": {
+        "tags": [
+          "符合性审查"
+        ],
+        "summary": "Confirm Match",
+        "description": "确认匹配结果。请求体含 project_id + status",
+        "operationId": "confirm_match_api_compliance__match_id__confirm_put",
+        "parameters": [
+          {
+            "name": "match_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Match Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ComplianceConfirmRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Confirm Match Api Compliance  Match Id  Confirm Put"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/compliance/{match_id}/accept": {
+      "put": {
+        "tags": [
+          "符合性审查"
+        ],
+        "summary": "Accept Match",
+        "description": "标记部分符合为可接受。请求体含 project_id + is_acceptable",
+        "operationId": "accept_match_api_compliance__match_id__accept_put",
+        "parameters": [
+          {
+            "name": "match_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Match Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ComplianceAcceptRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Accept Match Api Compliance  Match Id  Accept Put"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/projects/{project_id}/comparison/generate": {
+      "post": {
+        "tags": [
+          "比价"
+        ],
+        "summary": "Generate Comparison",
+        "description": "生成比价结果（异步任务）\n\n[M10] 前置检查：项目需有已确认归组，否则返回 422。\n[M11] 前端通过 GET /api/tasks/{task_id}/status 轮询进度，间隔 2 秒，超时 300 秒。",
+        "operationId": "generate_comparison_api_projects__project_id__comparison_generate_post",
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Project Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ComparisonGenerateResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/projects/{project_id}/comparison": {
+      "get": {
+        "tags": [
+          "比价"
+        ],
+        "summary": "Get Comparison",
+        "description": "获取比价结果",
+        "operationId": "get_comparison_api_projects__project_id__comparison_get",
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Project Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ComparisonResultResponse"
+                  },
+                  "title": "Response Get Comparison Api Projects  Project Id  Comparison Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/projects/{project_id}/export": {
+      "post": {
+        "tags": [
+          "导出"
+        ],
+        "summary": "Export Report",
+        "description": "导出 Excel 审计底稿（异步任务）",
+        "operationId": "export_report_api_projects__project_id__export_post",
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Project Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExportResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/projects/{project_id}/problems": {
+      "get": {
+        "tags": [
+          "问题清单"
+        ],
+        "summary": "Get Problems",
+        "description": "获取待处理问题清单",
+        "operationId": "get_problems_api_projects__project_id__problems_get",
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Project Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ProblemGroup"
+                  },
+                  "title": "Response Get Problems Api Projects  Project Id  Problems Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
     "schemas": {
+      "AnomalyDetail": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "title": "Type"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "blocking": {
+            "type": "boolean",
+            "title": "Blocking"
+          },
+          "affectedSuppliers": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Affectedsuppliers"
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "description",
+          "blocking",
+          "affectedSuppliers"
+        ],
+        "title": "AnomalyDetail",
+        "description": "异常详情（JSON 字段元素）"
+      },
+      "Body_import_requirements_api_projects__project_id__requirements_import_post": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "File"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file"
+        ],
+        "title": "Body_import_requirements_api_projects__project_id__requirements_import_post"
+      },
       "Body_import_rules_api_rules_import_post": {
         "properties": {
           "file": {
@@ -1551,6 +2268,296 @@
         ],
         "title": "CommodityGroupResponse",
         "description": "归组响应 — GET /api/projects/{project_id}/groups 的列表项"
+      },
+      "ComparisonGenerateResponse": {
+        "properties": {
+          "taskId": {
+            "type": "string",
+            "title": "Taskid"
+          }
+        },
+        "type": "object",
+        "required": [
+          "taskId"
+        ],
+        "title": "ComparisonGenerateResponse",
+        "description": "比价生成任务响应"
+      },
+      "ComparisonResultResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "groupId": {
+            "type": "string",
+            "title": "Groupid"
+          },
+          "groupName": {
+            "type": "string",
+            "title": "Groupname"
+          },
+          "projectId": {
+            "type": "string",
+            "title": "Projectid"
+          },
+          "comparisonStatus": {
+            "type": "string",
+            "title": "Comparisonstatus"
+          },
+          "supplierPrices": {
+            "items": {
+              "$ref": "#/components/schemas/SupplierPrice"
+            },
+            "type": "array",
+            "title": "Supplierprices"
+          },
+          "minPrice": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Minprice"
+          },
+          "effectiveMinPrice": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Effectiveminprice"
+          },
+          "maxPrice": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Maxprice"
+          },
+          "avgPrice": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avgprice"
+          },
+          "priceDiff": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pricediff"
+          },
+          "hasAnomaly": {
+            "type": "boolean",
+            "title": "Hasanomaly"
+          },
+          "anomalyDetails": {
+            "items": {
+              "$ref": "#/components/schemas/AnomalyDetail"
+            },
+            "type": "array",
+            "title": "Anomalydetails"
+          },
+          "missingSuppliers": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Missingsuppliers"
+          },
+          "generatedAt": {
+            "type": "string",
+            "title": "Generatedat"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "groupId",
+          "groupName",
+          "projectId",
+          "comparisonStatus",
+          "supplierPrices",
+          "hasAnomaly",
+          "anomalyDetails",
+          "missingSuppliers",
+          "generatedAt"
+        ],
+        "title": "ComparisonResultResponse",
+        "description": "比价结果响应"
+      },
+      "ComplianceAcceptRequest": {
+        "properties": {
+          "projectId": {
+            "type": "string",
+            "title": "Projectid"
+          },
+          "isAcceptable": {
+            "type": "boolean",
+            "title": "Isacceptable"
+          }
+        },
+        "type": "object",
+        "required": [
+          "projectId",
+          "isAcceptable"
+        ],
+        "title": "ComplianceAcceptRequest",
+        "description": "标记部分符合为可接受请求"
+      },
+      "ComplianceConfirmRequest": {
+        "properties": {
+          "projectId": {
+            "type": "string",
+            "title": "Projectid"
+          },
+          "status": {
+            "type": "string",
+            "pattern": "^(match|partial|no_match|unclear)$",
+            "title": "Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "projectId",
+          "status"
+        ],
+        "title": "ComplianceConfirmRequest",
+        "description": "确认匹配结果请求"
+      },
+      "ComplianceEvaluateResponse": {
+        "properties": {
+          "taskId": {
+            "type": "string",
+            "title": "Taskid"
+          }
+        },
+        "type": "object",
+        "required": [
+          "taskId"
+        ],
+        "title": "ComplianceEvaluateResponse",
+        "description": "符合性匹配任务响应"
+      },
+      "ComplianceMatrixCell": {
+        "properties": {
+          "matchId": {
+            "type": "string",
+            "title": "Matchid"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "isAcceptable": {
+            "type": "boolean",
+            "title": "Isacceptable"
+          },
+          "needsReview": {
+            "type": "boolean",
+            "title": "Needsreview"
+          },
+          "evidenceText": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Evidencetext"
+          }
+        },
+        "type": "object",
+        "required": [
+          "matchId",
+          "status",
+          "isAcceptable",
+          "needsReview"
+        ],
+        "title": "ComplianceMatrixCell",
+        "description": "符合性矩阵单元格"
+      },
+      "ComplianceMatrixResponse": {
+        "properties": {
+          "supplierNames": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Suppliernames"
+          },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/ComplianceMatrixRow"
+            },
+            "type": "array",
+            "title": "Rows"
+          }
+        },
+        "type": "object",
+        "required": [
+          "supplierNames",
+          "rows"
+        ],
+        "title": "ComplianceMatrixResponse",
+        "description": "符合性矩阵完整响应"
+      },
+      "ComplianceMatrixRow": {
+        "properties": {
+          "requirement": {
+            "$ref": "#/components/schemas/RequirementResponse"
+          },
+          "suppliers": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/ComplianceMatrixCell"
+            },
+            "type": "object",
+            "title": "Suppliers"
+          }
+        },
+        "type": "object",
+        "required": [
+          "requirement",
+          "suppliers"
+        ],
+        "title": "ComplianceMatrixRow",
+        "description": "符合性矩阵一行（一个需求项）"
+      },
+      "ExportResponse": {
+        "properties": {
+          "taskId": {
+            "type": "string",
+            "title": "Taskid"
+          }
+        },
+        "type": "object",
+        "required": [
+          "taskId"
+        ],
+        "title": "ExportResponse",
+        "description": "导出任务响应"
       },
       "FieldModifyRequest": {
         "properties": {
@@ -1951,6 +2958,82 @@
         ],
         "title": "MatchMode"
       },
+      "ProblemGroup": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "title": "Type"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "stage": {
+            "type": "string",
+            "title": "Stage"
+          },
+          "severity": {
+            "type": "string",
+            "title": "Severity",
+            "default": "warning"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ProblemItem"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "label",
+          "stage",
+          "count",
+          "items"
+        ],
+        "title": "ProblemGroup",
+        "description": "问题分组"
+      },
+      "ProblemItem": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "stage": {
+            "type": "string",
+            "title": "Stage"
+          },
+          "targetId": {
+            "type": "string",
+            "title": "Targetid"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "severity": {
+            "type": "string",
+            "title": "Severity",
+            "default": "warning"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "stage",
+          "targetId",
+          "description"
+        ],
+        "title": "ProblemItem",
+        "description": "单个问题项"
+      },
       "ProjectCreate": {
         "properties": {
           "name": {
@@ -2133,6 +3216,316 @@
         ],
         "title": "RawTableResponse",
         "description": "API 返回的原始表格信息"
+      },
+      "RequirementCreate": {
+        "properties": {
+          "code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Code"
+          },
+          "category": {
+            "type": "string",
+            "pattern": "^(功能要求|技术规格|商务条款|服务要求|交付要求)$",
+            "title": "Category"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Title"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "isMandatory": {
+            "type": "boolean",
+            "title": "Ismandatory",
+            "default": true
+          },
+          "matchType": {
+            "type": "string",
+            "pattern": "^(keyword|numeric|manual)$",
+            "title": "Matchtype"
+          },
+          "expectedValue": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expectedvalue"
+          },
+          "operator": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(gte|lte|eq|range)$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Operator"
+          }
+        },
+        "type": "object",
+        "required": [
+          "category",
+          "title",
+          "matchType"
+        ],
+        "title": "RequirementCreate",
+        "description": "创建需求项请求"
+      },
+      "RequirementImportResult": {
+        "properties": {
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "imported": {
+            "type": "integer",
+            "title": "Imported"
+          },
+          "skipped": {
+            "type": "integer",
+            "title": "Skipped"
+          },
+          "errors": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Errors"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total",
+          "imported",
+          "skipped",
+          "errors"
+        ],
+        "title": "RequirementImportResult",
+        "description": "需求标准导入结果"
+      },
+      "RequirementResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "projectId": {
+            "type": "string",
+            "title": "Projectid"
+          },
+          "code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Code"
+          },
+          "category": {
+            "type": "string",
+            "title": "Category"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "isMandatory": {
+            "type": "boolean",
+            "title": "Ismandatory"
+          },
+          "matchType": {
+            "type": "string",
+            "title": "Matchtype"
+          },
+          "expectedValue": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expectedvalue"
+          },
+          "operator": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Operator"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "title": "Sortorder"
+          },
+          "createdAt": {
+            "type": "string",
+            "title": "Createdat"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "projectId",
+          "category",
+          "title",
+          "isMandatory",
+          "matchType",
+          "sortOrder",
+          "createdAt"
+        ],
+        "title": "RequirementResponse",
+        "description": "需求项响应"
+      },
+      "RequirementUpdate": {
+        "properties": {
+          "projectId": {
+            "type": "string",
+            "title": "Projectid"
+          },
+          "code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Code"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(功能要求|技术规格|商务条款|服务要求|交付要求)$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "isMandatory": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ismandatory"
+          },
+          "matchType": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(keyword|numeric|manual)$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Matchtype"
+          },
+          "expectedValue": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expectedvalue"
+          },
+          "operator": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(gte|lte|eq|range)$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Operator"
+          }
+        },
+        "type": "object",
+        "required": [
+          "projectId"
+        ],
+        "title": "RequirementUpdate",
+        "description": "更新需求项请求"
       },
       "RuleCreateUpdate": {
         "properties": {
@@ -2679,6 +4072,91 @@
         ],
         "title": "SupplierFileResponse",
         "description": "API 返回的文件信息"
+      },
+      "SupplierPrice": {
+        "properties": {
+          "supplierFileId": {
+            "type": "string",
+            "title": "Supplierfileid"
+          },
+          "supplierName": {
+            "type": "string",
+            "title": "Suppliername"
+          },
+          "unitPrice": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unitprice"
+          },
+          "totalPrice": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Totalprice"
+          },
+          "taxBasis": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Taxbasis"
+          },
+          "unit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit"
+          },
+          "complianceStatus": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Compliancestatus"
+          },
+          "isAcceptable": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Isacceptable"
+          }
+        },
+        "type": "object",
+        "required": [
+          "supplierFileId",
+          "supplierName"
+        ],
+        "title": "SupplierPrice",
+        "description": "供应商报价（JSON 字段元素）"
       },
       "TableToggleRequest": {
         "properties": {
