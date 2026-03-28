@@ -61,9 +61,19 @@ else
 fi
 
 echo ""
-echo "=== Step 5: Tauri 打包 ==="
+echo "=== Step 5: Tauri 打包（跳过 sidecar 自动签名检查） ==="
 cd "$PROJECT_ROOT/frontend"
-pnpm tauri build
+TAURI_SKIP_SIDECAR_SIGNATURE_CHECK=true pnpm tauri build
+
+echo ""
+echo "=== Step 6: Ad-hoc 签名（macOS） ==="
+APP_PATH="src-tauri/target/release/bundle/macos/price-comparison-scanner.app"
+if [ -d "$APP_PATH" ]; then
+    codesign --force --deep -s - "$APP_PATH"
+    echo "Ad-hoc 签名完成: $APP_PATH"
+else
+    echo "跳过签名（未找到 .app 产物）"
+fi
 
 echo ""
 echo "=== 打包完成 ==="

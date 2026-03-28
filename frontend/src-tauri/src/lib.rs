@@ -1,6 +1,7 @@
 use std::fs;
+use std::io::Write;
 use std::sync::Mutex;
-use std::time::{Duration, Instant};
+use std::time::{Duration, Instant, SystemTime};
 
 use serde::Serialize;
 use tauri::{AppHandle, Emitter, Manager, Runtime};
@@ -25,6 +26,8 @@ struct SidecarState {
     safe_mode: bool,
 }
 
+struct StartupError(Mutex<Option<String>>);
+
 #[derive(Serialize, Clone)]
 struct SidecarInfo {
     port: u16,
@@ -36,6 +39,27 @@ struct SidecarInfo {
 #[derive(Serialize, Clone)]
 struct SidecarRestartedPayload {
     port: u16,
+}
+
+fn timestamp_str() -> String {
+    let secs = SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs();
+    format!("{}", secs)
+}
+
+fn sidecar_log(app_data_dir: &std::path::Path, msg: &str) {
+    let log_dir = app_data_dir.join("logs");
+    let _ = fs::create_dir_all(&log_dir);
+    let log_path = log_dir.join("sidecar.log");
+    if let Ok(mut file) = fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(&log_path)
+    {
+        let _ = writeln!(file, "[{}] {}", timestamp_str(), msg);
+    }
 }
 
 fn find_available_port() -> Result<u16, String> {
@@ -68,10 +92,12 @@ fn cleanup_orphan<R: Runtime>(app: &AppHandle<R>) {
 
     if let Ok(content) = fs::read_to_string(&pid_path) {
         if let Ok(old_pid) = content.trim().parse::<u32>() {
+            sidecar_log(&app_data, &format!("cleanup_orphan: killing old pid {}", old_pid));
             kill_pid(old_pid);
         }
     }
     let _ = fs::remove_file(&pid_path);
+    sidecar_log(&app_data, "cleanup_orphan: pid file removed");
 }
 
 /// Attempt to kill a process: SIGTERM → wait 1s → SIGKILL
@@ -110,7 +136,15 @@ fn start_sidecar<R: Runtime>(app: &AppHandle<R>) -> Result<SidecarState, String>
     let token = uuid::Uuid::new_v4().to_string();
     let port = find_available_port()?;
 
-    start_sidecar_with(app, port, &token)
+    let app_data = app.path().app_data_dir().unwrap_or_default();
+    sidecar_log(&app_data, &format!("start_sidecar: port={}, token={}...", port, &token[..8]));
+
+    let result = start_sidecar_with(app, port, &token);
+    match &result {
+        Ok(s) => sidecar_log(&app_data, &format!("start_sidecar: success, pid={}", s.pid)),
+        Err(e) => sidecar_log(&app_data, &format!("start_sidecar: failed: {}", e)),
+    }
+    result
 }
 
 /// Start sidecar with specific port and token. Used by both initial start and restart.
@@ -119,6 +153,9 @@ fn start_sidecar_with<R: Runtime>(
     port: u16,
     token: &str,
 ) -> Result<SidecarState, String> {
+    let app_data = app.path().app_data_dir().unwrap_or_default();
+    sidecar_log(&app_data, &format!("start_sidecar_with: creating command, port={}", port));
+
     let (mut rx, child) = app
         .shell()
         .sidecar("binaries/backend")
@@ -135,11 +172,12 @@ fn start_sidecar_with<R: Runtime>(
         .map_err(|e| format!("启动 sidecar 失败: {}", e))?;
 
     let pid = child.pid();
+    sidecar_log(&app_data, &format!("start_sidecar_with: spawned pid={}", pid));
 
     // Write PID file
-    if let Some(app_data) = app.path().app_data_dir().ok() {
-        let _ = fs::create_dir_all(&app_data);
-        let pid_path = app_data.join(".sidecar.pid");
+    if let Some(app_data_dir) = app.path().app_data_dir().ok() {
+        let _ = fs::create_dir_all(&app_data_dir);
+        let pid_path = app_data_dir.join(".sidecar.pid");
         let _ = fs::write(&pid_path, pid.to_string());
     }
 
@@ -169,7 +207,7 @@ fn start_sidecar_with<R: Runtime>(
         }
     });
 
-    // Wait for health check (up to 10 seconds, polling every 500ms)
+    // Wait for health check (up to 20 seconds, polling every 500ms)
     let health_url = format!("http://127.0.0.1:{}/api/health", port);
     let health_token = format!("Bearer {}", token);
 
@@ -178,13 +216,15 @@ fn start_sidecar_with<R: Runtime>(
         .build()
         .map_err(|e| format!("创建 tokio runtime 失败: {}", e))?;
 
+    sidecar_log(&app_data, "start_sidecar_with: starting health check (max 20s)");
+
     let ready = rt.block_on(async {
         let client = reqwest::Client::builder()
             .timeout(Duration::from_secs(2))
             .build()
             .unwrap();
 
-        for _ in 0..20 {
+        for i in 0..40 {
             tokio::time::sleep(Duration::from_millis(500)).await;
             match client
                 .get(&health_url)
@@ -192,16 +232,29 @@ fn start_sidecar_with<R: Runtime>(
                 .send()
                 .await
             {
-                Ok(resp) if resp.status().is_success() => return true,
-                _ => continue,
+                Ok(resp) if resp.status().is_success() => {
+                    eprintln!("[sidecar] health check passed on attempt {}", i + 1);
+                    return true;
+                }
+                Ok(resp) => {
+                    eprintln!("[sidecar] health check attempt {}: status {}", i + 1, resp.status());
+                }
+                Err(e) => {
+                    if i % 5 == 4 {
+                        eprintln!("[sidecar] health check attempt {}: {}", i + 1, e);
+                    }
+                }
             }
         }
         false
     });
 
     if !ready {
-        return Err("Sidecar 启动超时（10 秒内未响应 health API）".into());
+        sidecar_log(&app_data, "start_sidecar_with: health check timeout (20s)");
+        return Err("Sidecar 启动超时（20 秒内未响应 health API）".into());
     }
+
+    sidecar_log(&app_data, "start_sidecar_with: health check passed");
 
     Ok(SidecarState {
         port,
@@ -215,11 +268,16 @@ fn start_sidecar_with<R: Runtime>(
 }
 
 fn cleanup_sidecar<R: Runtime>(app: &AppHandle<R>, state: &Mutex<Option<SidecarState>>) {
+    let app_data = app.path().app_data_dir().unwrap_or_default();
+    sidecar_log(&app_data, "cleanup_sidecar: starting exit cleanup");
+
     let mut guard = state.lock().unwrap();
     if let Some(mut sidecar) = guard.take() {
         // 1. Send POST /api/shutdown
         let shutdown_url = format!("http://127.0.0.1:{}/api/shutdown", sidecar.port);
         let token = format!("Bearer {}", sidecar.token);
+
+        sidecar_log(&app_data, &format!("cleanup_sidecar: sending shutdown to port {}", sidecar.port));
 
         let rt = tokio::runtime::Builder::new_current_thread()
             .enable_all()
@@ -244,14 +302,16 @@ fn cleanup_sidecar<R: Runtime>(app: &AppHandle<R>, state: &Mutex<Option<SidecarS
         // 2. Force kill if still alive
         if let Some(child) = sidecar.child.take() {
             let _ = child.kill();
+            sidecar_log(&app_data, "cleanup_sidecar: force killed child process");
         }
 
         // 3. Delete PID file
-        if let Some(app_data) = app.path().app_data_dir().ok() {
-            let pid_path = app_data.join(".sidecar.pid");
+        if let Some(data_dir) = app.path().app_data_dir().ok() {
+            let pid_path = data_dir.join(".sidecar.pid");
             let _ = fs::remove_file(&pid_path);
         }
     }
+    sidecar_log(&app_data, "cleanup_sidecar: done");
 }
 
 /// Spawn the heartbeat loop that monitors sidecar health and auto-restarts on failure.
@@ -279,6 +339,8 @@ fn spawn_heartbeat_loop<R: Runtime + 'static>(app: AppHandle<R>) {
 
             // Already in safe mode, stop heartbeat
             if safe_mode {
+                let app_data = app.path().app_data_dir().unwrap_or_default();
+                sidecar_log(&app_data, "heartbeat: safe mode active, stopping loop");
                 eprintln!("[heartbeat] safe mode active, stopping heartbeat loop");
                 break;
             }
@@ -312,6 +374,10 @@ fn spawn_heartbeat_loop<R: Runtime + 'static>(app: AppHandle<R>) {
             }
 
             // 3 consecutive failures — attempt restart
+            let app_data = app.path().app_data_dir().unwrap_or_default();
+            sidecar_log(&app_data, &format!(
+                "heartbeat: {} consecutive failures, attempting restart", consecutive_failures
+            ));
             eprintln!("[heartbeat] {} consecutive failures, attempting restart", consecutive_failures);
 
             let should_safe_mode = {
@@ -337,6 +403,7 @@ fn spawn_heartbeat_loop<R: Runtime + 'static>(app: AppHandle<R>) {
             };
 
             if should_safe_mode {
+                sidecar_log(&app_data, "heartbeat: restart limit reached, entering safe mode");
                 eprintln!("[heartbeat] restart limit reached, entering safe mode");
                 let _ = app.emit("sidecar-safe-mode", ());
                 break;
@@ -362,6 +429,7 @@ fn spawn_heartbeat_loop<R: Runtime + 'static>(app: AppHandle<R>) {
                     match find_available_port() {
                         Ok(p) => p,
                         Err(e) => {
+                            sidecar_log(&app_data, &format!("heartbeat: no available port: {}", e));
                             eprintln!("[heartbeat] no available port: {}", e);
                             // Enter safe mode
                             drop(guard);
@@ -395,6 +463,7 @@ fn spawn_heartbeat_loop<R: Runtime + 'static>(app: AppHandle<R>) {
                         }
                     }
                     consecutive_failures = 0;
+                    sidecar_log(&app_data, &format!("heartbeat: sidecar restarted on port {}", restarted_port));
                     eprintln!("[heartbeat] sidecar restarted on port {}", restarted_port);
                     let _ = app.emit(
                         "sidecar-restarted",
@@ -402,6 +471,7 @@ fn spawn_heartbeat_loop<R: Runtime + 'static>(app: AppHandle<R>) {
                     );
                 }
                 Err(e) => {
+                    sidecar_log(&app_data, &format!("heartbeat: restart failed: {}", e));
                     eprintln!("[heartbeat] restart failed: {}", e);
                     // Will retry on next heartbeat cycle
                 }
@@ -413,6 +483,7 @@ fn spawn_heartbeat_loop<R: Runtime + 'static>(app: AppHandle<R>) {
 #[tauri::command]
 fn get_sidecar_info(
     state: tauri::State<'_, Mutex<Option<SidecarState>>>,
+    startup_err: tauri::State<'_, StartupError>,
 ) -> Result<SidecarInfo, String> {
     let guard = state.lock().unwrap();
     match guard.as_ref() {
@@ -421,7 +492,10 @@ fn get_sidecar_info(
             token: s.token.clone(),
             safe_mode: s.safe_mode,
         }),
-        None => Err("Sidecar 尚未启动".into()),
+        None => {
+            let err = startup_err.0.lock().unwrap();
+            Err(err.clone().unwrap_or_else(|| "Sidecar 尚未启动".to_string()))
+        }
     }
 }
 
@@ -431,6 +505,7 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_shell::init())
         .manage(Mutex::new(None::<SidecarState>))
+        .manage(StartupError(Mutex::new(None)))
         .invoke_handler(tauri::generate_handler![get_sidecar_info])
         .setup(|app| {
             let handle = app.handle().clone();
@@ -445,7 +520,11 @@ pub fn run() {
                     spawn_heartbeat_loop(handle.clone());
                 }
                 Err(e) => {
+                    let app_data = handle.path().app_data_dir().unwrap_or_default();
+                    sidecar_log(&app_data, &format!("启动失败: {}", e));
                     eprintln!("[sidecar] 启动失败: {}", e);
+                    let err_state: tauri::State<StartupError> = handle.state();
+                    *err_state.0.lock().unwrap() = Some(e);
                 }
             }
             Ok(())
