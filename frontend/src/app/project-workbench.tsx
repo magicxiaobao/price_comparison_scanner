@@ -5,6 +5,7 @@ import { ImportStage } from "../components/stages/import-stage";
 import { StandardizeStage } from "../components/stages/standardize-stage";
 import { GroupingStage } from "../components/stages/grouping-stage";
 import { ComplianceStage } from "../components/stages/compliance-stage";
+import { ComparisonStage } from "../components/stages/comparison-stage";
 import { StageNavigation } from "../components/workbench/stage-navigation";
 import { useGroupingStore } from "../stores/grouping-store";
 import { StageDirtyBanner } from "../components/workbench/stage-dirty-banner";
@@ -153,9 +154,7 @@ function ProjectWorkbench() {
               <ComplianceStage projectId={id} />
             )}
             {currentStage === 4 && (
-              <div className="h-[400px] border-2 border-dashed border-slate-200 rounded-lg flex items-center justify-center text-slate-400 backdrop-blur-sm bg-white">
-                比价分析阶段 — 等待组件接入
-              </div>
+              <ComparisonStage projectId={id} />
             )}
           </div>
         </main>
