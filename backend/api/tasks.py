@@ -21,6 +21,7 @@ async def get_task_status(task_id: str):
         "created_at": info.created_at,
         "started_at": info.started_at,
         "completed_at": info.completed_at,
+        "result": info.result,
     }
 
 

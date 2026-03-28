@@ -1,4 +1,5 @@
 from enum import Enum
+from typing import Any
 
 from pydantic import BaseModel
 
@@ -21,3 +22,4 @@ class TaskStatusResponse(BaseModel):
     created_at: str
     started_at: str | None = None
     completed_at: str | None = None
+    result: Any | None = None
