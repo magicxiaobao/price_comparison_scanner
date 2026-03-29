@@ -1,7 +1,9 @@
 import argparse
+import traceback
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from api.comparison import router as comparison_router
 from api.compliance import router as compliance_router
@@ -17,7 +19,7 @@ from api.rules import router as rules_router
 from api.shutdown import router as shutdown_router
 from api.standardization import router as standardization_router
 from api.tasks import router as tasks_router
-from config import settings
+from config import error_logger, settings
 
 app = FastAPI(
     title="三方比价支出依据扫描工具",
@@ -57,6 +59,19 @@ app.include_router(comparison_router, prefix="/api")
 app.include_router(export_router, prefix="/api")
 app.include_router(problems_router, prefix="/api")
 app.include_router(shutdown_router, prefix="/api")
+
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    tb = traceback.format_exception(type(exc), exc, exc.__traceback__)
+    error_logger.error(
+        f"Unhandled exception: {request.method} {request.url.path}\n{''.join(tb)}"
+    )
+    return JSONResponse(
+        status_code=500,
+        content={"detail": f"Internal Server Error: {type(exc).__name__}: {str(exc)}"},
+    )
+
 
 if __name__ == "__main__":
     import uvicorn

@@ -9,16 +9,22 @@ interface CreateProjectDialogProps {
 function CreateProjectDialog({ open, onClose, onCreate }: CreateProjectDialogProps) {
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
 
   if (!open) return null;
 
   const handleSubmit = async () => {
     if (!name.trim()) return;
     setLoading(true);
+    setErrorMsg("");
     try {
       await onCreate(name.trim());
       setName("");
       onClose();
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      console.error("[CreateProject] error:", error);
+      setErrorMsg(msg);
     } finally {
       setLoading(false);
     }
@@ -37,6 +43,11 @@ function CreateProjectDialog({ open, onClose, onCreate }: CreateProjectDialogPro
           onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
           autoFocus
         />
+        {errorMsg && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded text-red-700 text-sm break-all">
+            <strong>错误：</strong>{errorMsg}
+          </div>
+        )}
         <div className="flex justify-end gap-2">
           <button
             className="px-4 py-2 border rounded hover:bg-gray-100"

@@ -16,6 +16,51 @@
           "args": true
         }
       ]
+    },
+    {
+      "identifier": "http:default",
+      "allow": [
+        { "url": "http://127.0.0.1:17396" },
+        { "url": "http://127.0.0.1:17396/*" },
+        { "url": "http://127.0.0.1:17397" },
+        { "url": "http://127.0.0.1:17397/*" },
+        { "url": "http://127.0.0.1:17398" },
+        { "url": "http://127.0.0.1:17398/*" },
+        { "url": "http://127.0.0.1:17399" },
+        { "url": "http://127.0.0.1:17399/*" },
+        { "url": "http://127.0.0.1:17400" },
+        { "url": "http://127.0.0.1:17400/*" },
+        { "url": "http://127.0.0.1:17401" },
+        { "url": "http://127.0.0.1:17401/*" },
+        { "url": "http://127.0.0.1:17402" },
+        { "url": "http://127.0.0.1:17402/*" },
+        { "url": "http://127.0.0.1:17403" },
+        { "url": "http://127.0.0.1:17403/*" },
+        { "url": "http://127.0.0.1:17404" },
+        { "url": "http://127.0.0.1:17404/*" },
+        { "url": "http://127.0.0.1:17405" },
+        { "url": "http://127.0.0.1:17405/*" },
+        { "url": "http://localhost:17396" },
+        { "url": "http://localhost:17396/*" },
+        { "url": "http://localhost:17397" },
+        { "url": "http://localhost:17397/*" },
+        { "url": "http://localhost:17398" },
+        { "url": "http://localhost:17398/*" },
+        { "url": "http://localhost:17399" },
+        { "url": "http://localhost:17399/*" },
+        { "url": "http://localhost:17400" },
+        { "url": "http://localhost:17400/*" },
+        { "url": "http://localhost:17401" },
+        { "url": "http://localhost:17401/*" },
+        { "url": "http://localhost:17402" },
+        { "url": "http://localhost:17402/*" },
+        { "url": "http://localhost:17403" },
+        { "url": "http://localhost:17403/*" },
+        { "url": "http://localhost:17404" },
+        { "url": "http://localhost:17404/*" },
+        { "url": "http://localhost:17405" },
+        { "url": "http://localhost:17405/*" }
+      ]
     }
   ]
 }

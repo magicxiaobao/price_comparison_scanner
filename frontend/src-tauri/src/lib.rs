@@ -5,11 +5,8 @@ use std::time::{Duration, Instant, SystemTime};
 
 use serde::Serialize;
 use tauri::{AppHandle, Emitter, Manager, Runtime};
-// tauri-plugin-localhost 在生产模式下从 http://localhost:FRONTEND_PORT 提供前端资源
 use tauri_plugin_shell::process::CommandChild;
 use tauri_plugin_shell::ShellExt;
-
-const FRONTEND_PORT: u16 = 9527;
 
 const HEARTBEAT_INTERVAL_SECS: u64 = 5;
 const HEARTBEAT_TIMEOUT_SECS: u64 = 3;
@@ -595,7 +592,7 @@ fn get_sidecar_info(
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
-        .plugin(tauri_plugin_localhost::Builder::new(FRONTEND_PORT).build())
+        .plugin(tauri_plugin_http::init())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_shell::init())
         .manage(Mutex::new(None::<SidecarState>))

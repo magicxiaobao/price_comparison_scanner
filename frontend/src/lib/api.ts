@@ -1,4 +1,5 @@
-import axios from "axios";
+import axios, { AxiosError } from "axios";
+import type { InternalAxiosRequestConfig } from "axios";
 import type { ProjectSummary, ProjectDetail, CreateProjectRequest } from "../types/project";
 import type {
   CommodityGroup,
@@ -37,16 +38,151 @@ import type { ProblemGroup } from "../types/problem";
  *
  * 开发模式：Vite proxy 将 /api 转发到后端，无需手动设置 baseURL。
  * Tauri 模式：通过 Tauri invoke 获取端口和 token，设置 baseURL 和 Authorization。
+ *             自定义 adapter 使用 @tauri-apps/plugin-http（Rust 网络栈）绕过 WKWebView 限制。
  */
 const client = axios.create({
   baseURL: "",
-  headers: { "Content-Type": "application/json" },
 });
+
+// 拦截器：非 FormData 请求设置 Content-Type: application/json
+// 不能放在 client 默认 headers 中，否则 axios transformRequest 会把 FormData 序列化为 JSON
+client.interceptors.request.use((config) => {
+  if (!(config.data instanceof FormData)) {
+    config.headers["Content-Type"] = "application/json";
+  }
+  return config;
+});
+
+/**
+ * Tauri HTTP adapter: uses @tauri-apps/plugin-http (Rust network stack)
+ * to bypass WKWebView HTTP restrictions on macOS.
+ */
+let tauriFetchPromise: Promise<typeof globalThis.fetch> | null = null;
+
+function ensureTauriFetch(): Promise<typeof globalThis.fetch> {
+  if (!tauriFetchPromise) {
+    tauriFetchPromise = import("@tauri-apps/plugin-http").then(m => m.fetch);
+  }
+  return tauriFetchPromise;
+}
+
+async function tauriHttpAdapter(config: InternalAxiosRequestConfig): Promise<any> {
+  const fetchFn = await ensureTauriFetch();
+  const url = (config.baseURL || "") + (config.url || "");
+  const method = (config.method || "GET").toUpperCase();
+  console.log("[tauri-http] →", method, url);
+
+  // Build headers from AxiosHeaders (supports both plain object and AxiosHeaders instance)
+  const headers: Record<string, string> = {};
+  if (config.headers) {
+    const h = typeof config.headers.toJSON === "function" ? config.headers.toJSON() : config.headers;
+    for (const [key, value] of Object.entries(h)) {
+      if (typeof value === "string") {
+        headers[key] = value;
+      }
+    }
+  }
+
+  // Build body
+  // Tauri plugin-http 的 JS→Rust IPC 无法自动序列化 FormData，需手动构造 multipart body
+  let body: BodyInit | undefined;
+  if (config.data !== undefined && config.data !== null) {
+    if (config.data instanceof FormData) {
+      const boundary = `----TauriBoundary${Date.now()}${Math.random().toString(36).substring(2)}`;
+      const parts: Uint8Array[] = [];
+      const encoder = new TextEncoder();
+
+      for (const [key, value] of config.data.entries()) {
+        if (value instanceof File) {
+          parts.push(encoder.encode(
+            `--${boundary}\r\nContent-Disposition: form-data; name="${key}"; filename="${value.name}"\r\nContent-Type: ${value.type || "application/octet-stream"}\r\n\r\n`
+          ));
+          parts.push(new Uint8Array(await value.arrayBuffer()));
+          parts.push(encoder.encode("\r\n"));
+        } else {
+          parts.push(encoder.encode(
+            `--${boundary}\r\nContent-Disposition: form-data; name="${key}"\r\n\r\n${value}\r\n`
+          ));
+        }
+      }
+      parts.push(encoder.encode(`--${boundary}--\r\n`));
+
+      const totalLen = parts.reduce((s, p) => s + p.length, 0);
+      const merged = new Uint8Array(totalLen);
+      let off = 0;
+      for (const p of parts) { merged.set(p, off); off += p.length; }
+
+      body = merged;
+      headers["Content-Type"] = `multipart/form-data; boundary=${boundary}`;
+    } else {
+      body = typeof config.data === "string" ? config.data : JSON.stringify(config.data);
+    }
+  }
+
+  // Handle query params (axios config.params)
+  let finalUrl = url;
+  if (config.params) {
+    const qs = new URLSearchParams(config.params as Record<string, string>).toString();
+    if (qs) finalUrl += `?${qs}`;
+  }
+
+  const resp = await fetchFn(finalUrl, { method, headers, body });
+  console.log("[tauri-http] ←", resp.status, resp.ok);
+
+  // Parse response based on content type or responseType config
+  const contentType = resp.headers.get("content-type") || "";
+
+  let data: any;
+  if (config.responseType === "blob" || contentType.includes("application/octet-stream")) {
+    data = await resp.blob();
+  } else {
+    const text = await resp.text();
+    if (contentType.includes("application/json") && text) {
+      try {
+        data = JSON.parse(text);
+      } catch {
+        console.error("[tauri-http] JSON parse error, raw:", text.substring(0, 200));
+        data = text;
+      }
+    } else {
+      data = text;
+    }
+  }
+
+  let responseHeaders: Record<string, string> = {};
+  try {
+    responseHeaders = Object.fromEntries(resp.headers.entries());
+  } catch {
+    // some environments don't support headers.entries()
+  }
+
+  const response = {
+    data,
+    status: resp.status,
+    statusText: resp.statusText,
+    headers: responseHeaders,
+    config,
+    request: {},
+  };
+
+  if (resp.ok) {
+    return response;
+  }
+
+  throw new AxiosError(
+    `Request failed with status code ${resp.status}`,
+    AxiosError.ERR_BAD_RESPONSE,
+    config,
+    null,
+    response as any,
+  );
+}
 
 /** 配置 Tauri 模式的连接信息 */
 function configureTauriConnection(port: number, token: string): void {
   client.defaults.baseURL = `http://127.0.0.1:${port}`;
   client.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+  client.defaults.adapter = tauriHttpAdapter;
 }
 
 /** 开发模式：从环境变量注入 token（如有） */
@@ -162,7 +298,6 @@ export async function uploadFile(projectId: string, file: File): Promise<FileUpl
   const resp = await client.post<FileUploadResponse>(
     `/api/projects/${projectId}/files`,
     formData,
-    { headers: { "Content-Type": "multipart/form-data" } },
   );
   return resp.data;
 }
@@ -255,9 +390,7 @@ export async function importRules(file: File, strategy?: string): Promise<RuleIm
   const formData = new FormData();
   formData.append("file", file);
   if (strategy) formData.append("strategy", strategy);
-  const resp = await client.post<RuleImportSummary>("/api/rules/import", formData, {
-    headers: { "Content-Type": "multipart/form-data" },
-  });
+  const resp = await client.post<RuleImportSummary>("/api/rules/import", formData);
   return resp.data;
 }
 
@@ -405,7 +538,6 @@ export async function importRequirements(
   const resp = await client.post<RequirementImportResult>(
     `/api/projects/${projectId}/requirements/import`,
     formData,
-    { headers: { "Content-Type": "multipart/form-data" } },
   );
   return resp.data;
 }

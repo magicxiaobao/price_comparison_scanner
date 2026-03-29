@@ -50,27 +50,47 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
 
   loadProjects: async () => {
     set({ isLoading: true });
-    const projects = await api.listProjects();
-    set({ projects, isLoading: false });
+    try {
+      const projects = await api.listProjects();
+      set({ projects, isLoading: false });
+    } catch (error) {
+      console.error("[loadProjects] failed:", error);
+      set({ isLoading: false });
+    }
   },
 
   loadProject: async (id: string) => {
     set({ isLoading: true });
-    const project = await api.getProject(id);
-    set({ currentProject: project, isLoading: false });
+    try {
+      const project = await api.getProject(id);
+      set({ currentProject: project, isLoading: false });
+    } catch (error) {
+      console.error("[loadProject] failed:", error);
+      set({ isLoading: false });
+    }
   },
 
   createProject: async (name: string) => {
-    const project = await api.createProject({ name });
-    await get().loadProjects();
-    return project;
+    try {
+      const project = await api.createProject({ name });
+      await get().loadProjects();
+      return project;
+    } catch (error) {
+      console.error("[createProject] failed:", error);
+      throw error;
+    }
   },
 
   deleteProject: async (id: string) => {
-    await api.deleteProject(id);
-    await get().loadProjects();
-    if (get().currentProject?.id === id) {
-      set({ currentProject: null });
+    try {
+      await api.deleteProject(id);
+      await get().loadProjects();
+      if (get().currentProject?.id === id) {
+        set({ currentProject: null });
+      }
+    } catch (error) {
+      console.error("[deleteProject] failed:", error);
+      throw error;
     }
   },
 
@@ -83,13 +103,21 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
   activeTasks: {},
 
   loadFiles: async (projectId: string) => {
-    const files = await api.listFiles(projectId);
-    set({ files });
+    try {
+      const files = await api.listFiles(projectId);
+      set({ files });
+    } catch (error) {
+      console.error("[loadFiles] failed:", error);
+    }
   },
 
   loadTables: async (projectId: string) => {
-    const tables = await api.listTables(projectId);
-    set({ tables });
+    try {
+      const tables = await api.listTables(projectId);
+      set({ tables });
+    } catch (error) {
+      console.error("[loadTables] failed:", error);
+    }
   },
 
   addUploadTask: (taskId: string, _fileId: string) => {
