@@ -1,11 +1,21 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { FileUploadResponse, RawTable, SupplierFile } from "../../types/file";
 import type { TaskInfo } from "../../types/task";
-import { getTaskStatus } from "../../lib/api";
+import { deleteFile, getTaskStatus } from "../../lib/api";
 import { useProjectStore } from "../../stores/project-store";
 import { FileUploader } from "./file-uploader";
 import { SupplierConfirmDialog } from "./supplier-confirm-dialog";
 import { TableSelector } from "./table-selector";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "../ui/alert-dialog";
 
 interface ImportStageProps {
   projectId: string;
@@ -194,6 +204,7 @@ export function ImportStage({ projectId, files, tables }: ImportStageProps) {
                 file={file}
                 tracker={tracker}
                 onConfirmSupplier={openConfirmDialog}
+                onDeleteSuccess={refreshData}
               />
             );
           })}
@@ -239,11 +250,17 @@ function FileRow({
   file,
   tracker,
   onConfirmSupplier,
+  onDeleteSuccess,
 }: {
   file?: SupplierFile;
   tracker?: FileTracker;
   onConfirmSupplier: (fileId: string, suggestedName: string, originalFilename: string) => void;
+  onDeleteSuccess: () => void;
 }) {
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
   const filename = file?.original_filename ?? tracker?.originalFilename ?? "未知文件";
   const supplierName = file?.supplier_name ?? tracker?.supplierNameGuess ?? "";
   const isConfirmed = file?.supplier_confirmed ?? false;
@@ -256,6 +273,24 @@ function FileRow({
   }
 
   const canConfirm = !isConfirmed && parseStatus === "completed" && file;
+  const canDelete = !isConfirmed && parseStatus !== "parsing";
+
+  const handleDelete = async () => {
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      await deleteFile(fileId);
+      setDeleteDialogOpen(false);
+      onDeleteSuccess();
+    } catch (err: unknown) {
+      const detail =
+        (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail
+        ?? "删除失败";
+      setDeleteError(detail);
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   return (
     <div className="rounded-lg border border-gray-200 bg-white p-4">
@@ -281,6 +316,19 @@ function FileRow({
           )}
           {parseStatus === "failed" && (
             <span className="text-xs text-red-600">解析失败</span>
+          )}
+          {canDelete && (
+            <button
+              type="button"
+              onClick={() => setDeleteDialogOpen(true)}
+              disabled={deleting}
+              className="rounded p-1 text-gray-400 hover:bg-red-50 hover:text-red-500 disabled:opacity-50"
+              title="删除文件"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+            </button>
           )}
           {canConfirm && (
             <button
@@ -321,6 +369,33 @@ function FileRow({
       {tracker?.error && !tracker.error.includes("OCR") && (
         <p className="mt-2 text-xs text-red-600">{tracker.error}</p>
       )}
+
+      {/* 删除错误提示 */}
+      {deleteError && (
+        <p className="mt-2 text-xs text-red-600">{deleteError}</p>
+      )}
+
+      {/* 删除确认对话框 */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>确认删除</AlertDialogTitle>
+            <AlertDialogDescription>
+              确定要删除文件「{filename}」吗？删除后无法恢复。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>取消</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+              disabled={deleting}
+              onClick={handleDelete}
+            >
+              {deleting ? "删除中..." : "删除"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

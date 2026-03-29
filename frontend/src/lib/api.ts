@@ -307,6 +307,10 @@ export async function listFiles(projectId: string): Promise<SupplierFile[]> {
   return resp.data;
 }
 
+export async function deleteFile(fileId: string): Promise<void> {
+  await client.delete(`/api/files/${fileId}`);
+}
+
 // ---- 异步任务 API ----
 
 export async function getTaskStatus(taskId: string): Promise<TaskInfo> {
