@@ -38,6 +38,7 @@ pyinstaller --onefile \
   --name "backend-$TARGET" \
   --collect-submodules uvicorn \
   --paths "$PROJECT_ROOT/backend/" \
+  --add-data "db/schema.sql:db" \
   main.py
 cp "dist/backend-$TARGET" "$PROJECT_ROOT/frontend/src-tauri/binaries/"
 

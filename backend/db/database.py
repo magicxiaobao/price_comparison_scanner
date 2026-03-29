@@ -1,7 +1,15 @@
 import sqlite3
+import sys
 from collections.abc import Generator
 from contextlib import contextmanager
 from pathlib import Path
+
+
+def _get_base_path() -> Path:
+    """PyInstaller 打包后从 _MEIPASS 临时目录读取数据文件，开发模式用源码根目录"""
+    if getattr(sys, "frozen", False):
+        return Path(sys._MEIPASS)  # type: ignore[attr-defined]
+    return Path(__file__).parent.parent
 
 
 class Database:
@@ -19,7 +27,7 @@ class Database:
 
     def _init_schema(self) -> None:
         """首次连接时初始化 schema（幂等）"""
-        schema_path = Path(__file__).parent / "schema.sql"
+        schema_path = _get_base_path() / "db" / "schema.sql"
         schema_sql = schema_path.read_text(encoding="utf-8")
         conn = self._get_connection()
         try:
