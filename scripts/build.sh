@@ -32,19 +32,25 @@ pnpm lint
 pnpm exec tsc --noEmit
 
 echo ""
-echo "=== Step 3: PyInstaller 打包后端 ==="
+echo "=== Step 3: PyInstaller --onedir 打包后端 ==="
 cd "$PROJECT_ROOT/backend"
-pyinstaller --onefile \
-  --name "backend-$TARGET" \
+pyinstaller --onedir --clean --noconfirm \
+  --name backend \
   --collect-submodules uvicorn \
   --paths "$PROJECT_ROOT/backend/" \
   --add-data "db/schema.sql:db" \
+  --distpath ./dist \
   main.py
-cp "dist/backend-$TARGET" "$PROJECT_ROOT/frontend/src-tauri/binaries/"
+
+# 复制 onedir 产物到 Tauri resources
+SIDECAR_DEST="$PROJECT_ROOT/frontend/src-tauri/resources/sidecar"
+rm -rf "$SIDECAR_DEST"
+cp -r "dist/backend" "$SIDECAR_DEST"
+chmod -R u+x "$SIDECAR_DEST"
 
 echo ""
 echo "=== Step 4: 验证 sidecar 可执行文件 ==="
-"$PROJECT_ROOT/frontend/src-tauri/binaries/backend-$TARGET" \
+"$SIDECAR_DEST/backend" \
   --host 127.0.0.1 --port 17396 --token build-test &
 SIDECAR_PID=$!
 sleep 3

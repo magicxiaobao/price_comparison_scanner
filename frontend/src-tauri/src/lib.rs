@@ -1,12 +1,11 @@
 use std::fs;
-use std::io::Write;
+use std::io::{BufRead, Write};
+use std::process::{Child as StdChild, Command as StdCommand, Stdio};
 use std::sync::Mutex;
 use std::time::{Duration, Instant, SystemTime};
 
 use serde::Serialize;
 use tauri::{AppHandle, Emitter, Manager, Runtime};
-use tauri_plugin_shell::process::CommandChild;
-use tauri_plugin_shell::ShellExt;
 
 const HEARTBEAT_INTERVAL_SECS: u64 = 5;
 const HEARTBEAT_TIMEOUT_SECS: u64 = 3;
@@ -19,7 +18,7 @@ struct SidecarState {
     token: String,
     #[allow(dead_code)]
     pid: u32,
-    child: Option<CommandChild>,
+    child: Option<StdChild>,
     // Hardening fields
     restart_count: u32,
     restart_window_start: Instant,
@@ -181,10 +180,30 @@ fn start_sidecar_with<R: Runtime>(
         },
     );
 
-    let (mut rx, child) = app
-        .shell()
-        .sidecar("backend")
-        .map_err(|e| format!("创建 sidecar 命令失败: {}", e))?
+    // Resolve sidecar binary from bundled resources
+    let resource_dir = app
+        .path()
+        .resource_dir()
+        .map_err(|e| format!("获取资源目录失败: {}", e))?;
+    let sidecar_bin = resource_dir.join("sidecar").join("backend");
+
+    sidecar_log(
+        &app_data,
+        &format!("start_sidecar_with: sidecar_bin={}", sidecar_bin.display()),
+    );
+
+    // Ensure executable permission on unix
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        if let Ok(meta) = fs::metadata(&sidecar_bin) {
+            let mut perms = meta.permissions();
+            perms.set_mode(0o755);
+            let _ = fs::set_permissions(&sidecar_bin, perms);
+        }
+    }
+
+    let mut child = StdCommand::new(&sidecar_bin)
         .args([
             "--host",
             "127.0.0.1",
@@ -193,10 +212,12 @@ fn start_sidecar_with<R: Runtime>(
             "--token",
             token,
         ])
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
         .spawn()
         .map_err(|e| format!("启动 sidecar 失败: {}", e))?;
 
-    let pid = child.pid();
+    let pid = child.id();
     sidecar_log(
         &app_data,
         &format!("start_sidecar_with: spawned pid={}", pid),
@@ -218,31 +239,23 @@ fn start_sidecar_with<R: Runtime>(
         let _ = fs::write(&pid_path, pid.to_string());
     }
 
-    // Spawn a background task to drain sidecar stdout/stderr so the pipe doesn't block
-    tauri::async_runtime::spawn(async move {
-        use tauri_plugin_shell::process::CommandEvent;
-        while let Some(event) = rx.recv().await {
-            match event {
-                CommandEvent::Stdout(line) => {
-                    let text = String::from_utf8_lossy(&line);
-                    eprintln!("[sidecar stdout] {}", text);
-                }
-                CommandEvent::Stderr(line) => {
-                    let text = String::from_utf8_lossy(&line);
-                    eprintln!("[sidecar stderr] {}", text);
-                }
-                CommandEvent::Terminated(payload) => {
-                    eprintln!("[sidecar] terminated: {:?}", payload);
-                    break;
-                }
-                CommandEvent::Error(err) => {
-                    eprintln!("[sidecar] error: {}", err);
-                    break;
-                }
-                _ => {}
+    // Drain stdout/stderr in background threads to prevent pipe blocking
+    if let Some(stdout) = child.stdout.take() {
+        std::thread::spawn(move || {
+            let reader = std::io::BufReader::new(stdout);
+            for line in reader.lines().map_while(Result::ok) {
+                eprintln!("[sidecar stdout] {}", line);
             }
-        }
-    });
+        });
+    }
+    if let Some(stderr) = child.stderr.take() {
+        std::thread::spawn(move || {
+            let reader = std::io::BufReader::new(stderr);
+            for line in reader.lines().map_while(Result::ok) {
+                eprintln!("[sidecar stderr] {}", line);
+            }
+        });
+    }
 
     // Wait for health check (up to 60 seconds, polling every 500ms)
     let health_url = format!("http://127.0.0.1:{}/api/health", port);
@@ -371,7 +384,7 @@ fn cleanup_sidecar<R: Runtime>(app: &AppHandle<R>, state: &Mutex<Option<SidecarS
         }
 
         // 2. Force kill if still alive
-        if let Some(child) = sidecar.child.take() {
+        if let Some(mut child) = sidecar.child.take() {
             let _ = child.kill();
             sidecar_log(&app_data, "cleanup_sidecar: force killed child process");
         }
@@ -495,7 +508,7 @@ fn spawn_heartbeat_loop<R: Runtime + 'static>(app: AppHandle<R>) {
             {
                 let mut guard = state_mutex.lock().unwrap();
                 if let Some(sidecar) = guard.as_mut() {
-                    if let Some(child) = sidecar.child.take() {
+                    if let Some(mut child) = sidecar.child.take() {
                         let _ = child.kill();
                     }
                 }
@@ -594,7 +607,7 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_http::init())
         .plugin(tauri_plugin_opener::init())
-        .plugin(tauri_plugin_shell::init())
+        // tauri_plugin_shell kept in Cargo.toml for potential future use
         .manage(Mutex::new(None::<SidecarState>))
         .manage(StartupError(Mutex::new(None)))
         .invoke_handler(tauri::generate_handler![get_sidecar_info])
