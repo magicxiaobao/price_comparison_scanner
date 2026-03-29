@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type { ProjectSummary } from "../types/project";
+import { Badge } from "./ui/badge";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -46,8 +47,17 @@ function ProjectList({ projects, onDelete }: ProjectListProps) {
                 onClick={() => navigate(`/project/${p.id}`)}
               >
                 <td className="px-4 py-3 font-medium">{p.name}</td>
-                <td className="px-4 py-3 text-gray-600">{p.supplier_count} 家</td>
-                <td className="px-4 py-3 text-gray-600">{p.current_stage}</td>
+                <td className="px-4 py-3">
+                  <span className="inline-flex items-center gap-1.5">
+                    <span className={`inline-flex w-5 h-5 rounded-full text-xs font-bold items-center justify-center ${p.supplier_count > 0 ? "bg-blue-100 text-blue-700" : "bg-slate-100 text-slate-400"}`}>
+                      {p.supplier_count}
+                    </span>
+                    <span className="text-gray-500 text-xs">家</span>
+                  </span>
+                </td>
+                <td className="px-4 py-3">
+                  <StageBadge stage={p.current_stage} />
+                </td>
                 <td className="px-4 py-3 text-gray-500">{formatTime(p.updated_at)}</td>
                 <td className="px-4 py-3 text-right">
                   <button
@@ -92,6 +102,20 @@ function ProjectList({ projects, onDelete }: ProjectListProps) {
       </AlertDialog>
     </>
   );
+}
+
+function StageBadge({ stage }: { stage: string }) {
+  let className: string;
+  if (stage === "比价完成") {
+    className = "bg-emerald-50 text-emerald-700 border-emerald-200";
+  } else if (stage.includes("需重新处理")) {
+    className = "bg-amber-50 text-amber-700 border-amber-200";
+  } else if (stage === "导入文件") {
+    className = "bg-slate-100 text-slate-600 border-slate-200";
+  } else {
+    className = "bg-blue-50 text-blue-700 border-blue-200";
+  }
+  return <Badge variant="outline" className={className}>{stage}</Badge>;
 }
 
 function formatTime(iso: string): string {
