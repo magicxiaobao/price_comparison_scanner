@@ -22,7 +22,6 @@ function HomePage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("确认删除此项目？")) return;
     await deleteProject(id);
   };
 
