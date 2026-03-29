@@ -8,7 +8,10 @@ interface TableSelectorProps {
   onSelectionChange: (tableId: string, selected: boolean) => void;
 }
 
-function parseRawData(raw: string): RawTableData | null {
+function parseRawData(raw: string | RawTableData): RawTableData | null {
+  if (typeof raw === "object" && raw !== null) {
+    return raw as RawTableData;
+  }
   try {
     return JSON.parse(raw) as RawTableData;
   } catch {

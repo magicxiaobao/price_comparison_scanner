@@ -26,7 +26,7 @@ export interface RawTable {
   page_number: number | null;
   row_count: number;
   column_count: number;
-  raw_data: string; // JSON 字符串，需 JSON.parse 为 RawTableData
+  raw_data: string | RawTableData; // 后端返回 JSON 对象，兼容字符串
   selected: boolean;
   supplier_name?: string | null;
   original_filename?: string | null;
