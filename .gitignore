@@ -13,5 +13,9 @@ target/
 backend/build/
 *.spec
 
-# Sidecar binaries (built by PyInstaller, not committed)
+# Sidecar (PyInstaller --onedir output, not committed)
 frontend/src-tauri/binaries/backend-*
+frontend/src-tauri/resources/sidecar/
+
+# Claude Code
+.claude/
