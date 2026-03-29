@@ -87,7 +87,13 @@ function ProjectWorkbench() {
           </h1>
         </div>
         <div className="flex items-center gap-3">
-          <Button variant="outline" size="sm" className="h-8 text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700 border hover:text-white">
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700 border hover:text-white cursor-not-allowed opacity-60"
+            disabled
+            title="项目设置功能开发中"
+          >
             项目设置
           </Button>
         </div>

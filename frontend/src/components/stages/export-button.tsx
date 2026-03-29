@@ -1,5 +1,6 @@
 import { useComparisonStore } from "../../stores/comparison-store";
 import { Button } from "../ui/button";
+import { openPath, revealItemInDir } from "@tauri-apps/plugin-opener";
 
 interface ExportButtonProps {
   projectId: string;
@@ -16,6 +17,22 @@ export function ExportButton({ projectId, disabled }: ExportButtonProps) {
     exportReport,
     clearExportResult,
   } = useComparisonStore();
+
+  const handleOpenFile = async () => {
+    if (exportFilePath) {
+      try {
+        await openPath(exportFilePath);
+      } catch {
+        await revealItemInDir(exportFilePath).catch(() => {});
+      }
+    }
+  };
+
+  const handleRevealInDir = async () => {
+    if (exportFilePath) {
+      await revealItemInDir(exportFilePath).catch(() => {});
+    }
+  };
 
   return (
     <div className="flex items-center gap-3">
@@ -56,10 +73,30 @@ export function ExportButton({ projectId, disabled }: ExportButtonProps) {
       )}
       {exportFilePath && (
         <span className="flex items-center gap-1 text-xs text-green-600">
-          导出完成：{exportFileName ?? exportFilePath}
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 flex-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+          </svg>
           <button
             type="button"
-            className="ml-1 text-slate-400 hover:text-slate-600"
+            className="hover:underline hover:text-green-700 cursor-pointer truncate max-w-[200px]"
+            onClick={handleOpenFile}
+            title="点击打开文件"
+          >
+            {exportFileName ?? "导出完成"}
+          </button>
+          <button
+            type="button"
+            className="text-slate-400 hover:text-blue-600 flex-none"
+            onClick={handleRevealInDir}
+            title="在 Finder 中显示"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 19a2 2 0 01-2-2V7a2 2 0 012-2h4l2 2h4a2 2 0 012 2v1M5 19h14a2 2 0 002-2v-5a2 2 0 00-2-2H9a2 2 0 00-2 2v5a2 2 0 01-2 2z" />
+            </svg>
+          </button>
+          <button
+            type="button"
+            className="text-slate-400 hover:text-slate-600 flex-none"
             onClick={clearExportResult}
             aria-label="关闭"
           >
