@@ -57,7 +57,7 @@ class ProjectService:
             repo = ProjectRepo(db)
             row = repo.get_by_id(p["id"])
             if row:
-                result.append(self._to_summary(row))
+                result.append(self._to_summary(row, db))
         return result
 
     def get_project(self, project_id: str) -> ProjectDetail | None:
@@ -364,13 +364,64 @@ class ProjectService:
         ]
         self._write_global_config(config)
 
-    def _to_summary(self, row: dict) -> ProjectSummary:
+    def _to_summary(self, row: dict, db: Database) -> ProjectSummary:
+        # 查询已确认的供应商数量
+        with db.read() as conn:
+            cursor = conn.execute(
+                "SELECT COUNT(*) AS cnt FROM supplier_files WHERE project_id = ? AND supplier_confirmed = 1",
+                (row["id"],),
+            )
+            supplier_count = cursor.fetchone()["cnt"]
+
+        current_stage = self._determine_current_stage(row)
+
         return ProjectSummary(
             id=row["id"],
             name=row["name"],
             created_at=row["created_at"],
             updated_at=row["updated_at"],
+            supplier_count=supplier_count,
+            current_stage=current_stage,
         )
+
+    @staticmethod
+    def _determine_current_stage(row: dict) -> str:
+        """根据项目阶段状态字段倒序推断当前阶段中文名"""
+        comparison_status = row.get("comparison_status", "pending")
+        compliance_status = row.get("compliance_status", "skipped")
+        grouping_status = row.get("grouping_status", "pending")
+        normalize_status = row.get("normalize_status", "pending")
+        import_status = row.get("import_status", "pending")
+
+        # 倒序检查已完成的最高阶段
+        if comparison_status == "completed":
+            return "比价完成"
+        if comparison_status == "dirty":
+            return "比价需重新处理"
+
+        if compliance_status == "completed":
+            return "符合性审查完成"
+        if compliance_status == "dirty":
+            return "符合性审查需重新处理"
+
+        if compliance_status == "skipped" and grouping_status == "completed":
+            return "归组完成"
+        if grouping_status == "completed":
+            return "归组完成"
+        if grouping_status == "dirty":
+            return "归组需重新处理"
+
+        if normalize_status == "completed":
+            return "标准化完成"
+        if normalize_status == "dirty":
+            return "标准化需重新处理"
+
+        if import_status == "completed":
+            return "导入完成"
+        if import_status == "dirty":
+            return "导入需重新处理"
+
+        return "导入文件"
 
     def _to_detail(self, row: dict) -> ProjectDetail:
         return ProjectDetail(
