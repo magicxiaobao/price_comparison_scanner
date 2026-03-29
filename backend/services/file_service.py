@@ -123,6 +123,43 @@ class FileService:
         table_repo = TableRepo(db)
         return table_repo.toggle_selection(table_id)
 
+    def find_file(self, file_id: str) -> tuple[dict | None, str | None]:
+        """跨项目查找文件记录，返回 (file_record, project_id)"""
+        import json
+        config_path = get_app_data_dir() / "config.json"
+        if not config_path.exists():
+            return None, None
+        config = json.loads(config_path.read_text(encoding="utf-8"))
+        for p in config.get("recent_projects", []):
+            project_dir = Path(p["path"])
+            db_path = project_dir / "project.db"
+            if not db_path.exists():
+                continue
+            db = Database(db_path)
+            file_repo = FileRepo(db)
+            record = file_repo.get_by_id(file_id)
+            if record:
+                return record, p["id"]
+        return None, None
+
+    def delete_file(self, file_id: str, project_id: str) -> bool:
+        """删除文件：删除磁盘文件 + 数据库记录（CASCADE 自动清理关联表）"""
+        project_dir = get_app_data_dir() / "projects" / project_id
+        db = Database(project_dir / "project.db")
+        file_repo = FileRepo(db)
+
+        record = file_repo.get_by_id(file_id)
+        if not record:
+            return False
+
+        # 删除磁盘上的源文件
+        source_file = project_dir / record["file_path"]
+        if source_file.exists():
+            source_file.unlink()
+
+        # 删除数据库记录（ON DELETE CASCADE 清理 raw_tables → standardized_rows 等）
+        return file_repo.delete(file_id)
+
     def get_files(self, project_id: str) -> list[dict]:
         """获取项目的所有文件"""
         project_dir = get_app_data_dir() / "projects" / project_id

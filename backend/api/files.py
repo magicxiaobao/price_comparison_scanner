@@ -51,6 +51,20 @@ async def confirm_supplier(file_id: str, body: SupplierConfirmRequest):
     return result
 
 
+@router.delete("/files/{file_id}")
+async def delete_file(file_id: str) -> dict[str, str]:
+    """删除未确认供应商的文件及其关联数据"""
+    file_record, project_id = file_service.find_file(file_id)
+    if not file_record or not project_id:
+        raise HTTPException(status_code=404, detail="文件不存在")
+
+    if file_record.get("supplier_confirmed") == 1:
+        raise HTTPException(status_code=409, detail="已确认供应商的文件不可删除")
+
+    file_service.delete_file(file_id, project_id)
+    return {"detail": "已删除"}
+
+
 @router.get("/projects/{project_id}/tables", response_model=list[RawTableResponse])
 async def list_tables(project_id: str):
     """获取项目的所有解析表格"""

@@ -413,6 +413,53 @@
         }
       }
     },
+    "/api/files/{file_id}": {
+      "delete": {
+        "tags": [
+          "文件导入"
+        ],
+        "summary": "Delete File",
+        "description": "删除未确认供应商的文件及其关联数据",
+        "operationId": "delete_file_api_files__file_id__delete",
+        "parameters": [
+          {
+            "name": "file_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "File Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Delete File Api Files  File Id  Delete"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/projects/{project_id}/tables": {
       "get": {
         "tags": [
