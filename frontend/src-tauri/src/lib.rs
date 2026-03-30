@@ -195,7 +195,7 @@ fn start_sidecar_with<R: Runtime>(
         &format!("start_sidecar_with: sidecar_bin={}", sidecar_bin.display()),
     );
 
-    // Ensure executable permission on unix
+    // Ensure executable permission and remove quarantine on macOS
     #[cfg(unix)]
     {
         use std::os::unix::fs::PermissionsExt;
@@ -204,6 +204,13 @@ fn start_sidecar_with<R: Runtime>(
             perms.set_mode(0o755);
             let _ = fs::set_permissions(&sidecar_bin, perms);
         }
+    }
+    #[cfg(target_os = "macos")]
+    {
+        let sidecar_dir = resource_dir.join("sidecar");
+        let _ = StdCommand::new("xattr")
+            .args(["-cr", &sidecar_dir.to_string_lossy()])
+            .output();
     }
 
     let mut child = StdCommand::new(&sidecar_bin)
@@ -260,14 +267,9 @@ fn start_sidecar_with<R: Runtime>(
         });
     }
 
-    // Wait for health check (up to 60 seconds, polling every 500ms)
-    let health_url = format!("http://127.0.0.1:{}/api/health", port);
-    let health_token = format!("Bearer {}", token);
-
-    let rt = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .map_err(|e| format!("创建 tokio runtime 失败: {}", e))?;
+    // Wait for sidecar to start listening (TCP connect check, up to 60 seconds)
+    // Note: Use TCP connect instead of HTTP reqwest to avoid macOS App Sandbox blocking
+    let addr = format!("127.0.0.1:{}", port);
 
     sidecar_log(
         &app_data,
@@ -275,19 +277,15 @@ fn start_sidecar_with<R: Runtime>(
     );
 
     let app_for_progress = app.clone();
-    let ready = rt.block_on(async {
-        let client = reqwest::Client::builder()
-            .timeout(Duration::from_secs(2))
-            .build()
-            .unwrap();
-
+    let ready = {
+        let mut result = false;
         for i in 0..120 {
-            tokio::time::sleep(Duration::from_millis(500)).await;
+            std::thread::sleep(Duration::from_millis(500));
 
-            // 每 2 秒更新一次进度 (每 4 次轮询)
+            // 每 2 秒更新一次进度
             if i % 4 == 0 {
                 let elapsed_secs = (i + 1) / 2;
-                let progress = 10 + (elapsed_secs as u32 * 90 / 60).min(85); // 10% → 95%
+                let progress = 10 + (elapsed_secs as u32 * 90 / 60).min(85);
                 let _ = app_for_progress.emit(
                     "sidecar-progress",
                     SidecarProgress {
@@ -298,13 +296,11 @@ fn start_sidecar_with<R: Runtime>(
                 );
             }
 
-            match client
-                .get(&health_url)
-                .header("Authorization", &health_token)
-                .send()
-                .await
-            {
-                Ok(resp) if resp.status().is_success() => {
+            match std::net::TcpStream::connect_timeout(
+                &addr.parse().unwrap(),
+                Duration::from_secs(1),
+            ) {
+                Ok(_) => {
                     eprintln!("[sidecar] health check passed on attempt {}", i + 1);
                     let _ = app_for_progress.emit(
                         "sidecar-progress",
@@ -314,14 +310,8 @@ fn start_sidecar_with<R: Runtime>(
                             progress: 100,
                         },
                     );
-                    return true;
-                }
-                Ok(resp) => {
-                    eprintln!(
-                        "[sidecar] health check attempt {}: status {}",
-                        i + 1,
-                        resp.status()
-                    );
+                    result = true;
+                    break;
                 }
                 Err(e) => {
                     if i % 10 == 9 {
@@ -330,8 +320,8 @@ fn start_sidecar_with<R: Runtime>(
                 }
             }
         }
-        false
-    });
+        result
+    };
 
     if !ready {
         sidecar_log(&app_data, "start_sidecar_with: health check timeout (60s)");
@@ -357,39 +347,17 @@ fn cleanup_sidecar<R: Runtime>(app: &AppHandle<R>, state: &Mutex<Option<SidecarS
 
     let mut guard = state.lock().unwrap();
     if let Some(mut sidecar) = guard.take() {
-        // 1. Send POST /api/shutdown
-        let shutdown_url = format!("http://127.0.0.1:{}/api/shutdown", sidecar.port);
-        let token = format!("Bearer {}", sidecar.token);
-
         sidecar_log(
             &app_data,
-            &format!("cleanup_sidecar: sending shutdown to port {}", sidecar.port),
+            &format!("cleanup_sidecar: killing sidecar on port {}", sidecar.port),
         );
 
-        let rt = tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build();
-
-        if let Ok(rt) = rt {
-            rt.block_on(async {
-                let client = reqwest::Client::builder()
-                    .timeout(Duration::from_secs(3))
-                    .build()
-                    .unwrap();
-                let _ = client
-                    .post(&shutdown_url)
-                    .header("Authorization", &token)
-                    .send()
-                    .await;
-                // Wait up to 3 seconds for graceful shutdown
-                tokio::time::sleep(Duration::from_secs(3)).await;
-            });
-        }
-
-        // 2. Force kill if still alive
+        // Kill child process directly (avoids reqwest which is blocked by macOS App Sandbox)
         if let Some(mut child) = sidecar.child.take() {
+            kill_pid(child.id());
+            std::thread::sleep(Duration::from_secs(1));
             let _ = child.kill();
-            sidecar_log(&app_data, "cleanup_sidecar: force killed child process");
+            sidecar_log(&app_data, "cleanup_sidecar: killed child process");
         }
 
         // 3. Delete PID file
@@ -404,11 +372,6 @@ fn cleanup_sidecar<R: Runtime>(app: &AppHandle<R>, state: &Mutex<Option<SidecarS
 /// Spawn the heartbeat loop that monitors sidecar health and auto-restarts on failure.
 fn spawn_heartbeat_loop<R: Runtime + 'static>(app: AppHandle<R>) {
     tauri::async_runtime::spawn(async move {
-        let client = reqwest::Client::builder()
-            .timeout(Duration::from_secs(HEARTBEAT_TIMEOUT_SECS))
-            .build()
-            .unwrap();
-
         let mut consecutive_failures: u32 = 0;
 
         loop {
@@ -416,7 +379,7 @@ fn spawn_heartbeat_loop<R: Runtime + 'static>(app: AppHandle<R>) {
 
             // Read current state
             let state_mutex: tauri::State<'_, Mutex<Option<SidecarState>>> = app.state();
-            let (port, token, safe_mode) = {
+            let (port, _token, safe_mode) = {
                 let guard = state_mutex.lock().unwrap();
                 match guard.as_ref() {
                     Some(s) => (s.port, s.token.clone(), s.safe_mode),
@@ -432,18 +395,13 @@ fn spawn_heartbeat_loop<R: Runtime + 'static>(app: AppHandle<R>) {
                 break;
             }
 
-            let health_url = format!("http://127.0.0.1:{}/api/health", port);
-            let auth = format!("Bearer {}", token);
-
-            let ok = match client
-                .get(&health_url)
-                .header("Authorization", &auth)
-                .send()
-                .await
-            {
-                Ok(resp) => resp.status().is_success(),
-                Err(_) => false,
-            };
+            // TCP connect check (avoids macOS App Sandbox blocking reqwest HTTP)
+            let addr = format!("127.0.0.1:{}", port);
+            let ok = std::net::TcpStream::connect_timeout(
+                &addr.parse().unwrap(),
+                Duration::from_secs(HEARTBEAT_TIMEOUT_SECS),
+            )
+            .is_ok();
 
             if ok {
                 consecutive_failures = 0;
