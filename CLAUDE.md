@@ -91,11 +91,25 @@ pnpm dev                                  # 启动 Vite 开发服务器（不含
 cd frontend
 pnpm tauri dev                            # 启动 Tauri + 自动拉起 sidecar
 
-# ── 生产打包 ──
+# ── macOS ARM64 本地打包 ──
 cd backend
-pyinstaller --onefile --name backend-<target-triple> main.py  # 打包 sidecar
-cd frontend
-pnpm tauri build                          # 打包桌面安装包
+.venv/bin/pyinstaller backend.spec --noconfirm                # 打包 sidecar
+rm -rf ../frontend/src-tauri/resources/sidecar
+mkdir -p ../frontend/src-tauri/resources/sidecar
+cp -R dist/backend/* ../frontend/src-tauri/resources/sidecar/
+cd ../frontend
+pnpm tauri build --bundles dmg            # 生成 DMG 安装包
+# 产物: frontend/src-tauri/target/release/bundle/dmg/*.dmg
+
+# ── Windows x64 远程打包（GitHub Actions） ──
+# 仓库: https://github.com/magicxiaobao/price_comparison_scanner
+# 工作流: .github/workflows/build-windows.yml（仅手动触发）
+# 触发命令:
+gh workflow run build-windows.yml --repo magicxiaobao/price_comparison_scanner --ref master
+# 监控命令:
+gh run watch <run-id> --repo magicxiaobao/price_comparison_scanner
+# 产物: Actions 页面 Artifacts 区域下载 windows-installer.zip（含 NSIS .exe）
+# 注意: 本机无法交叉编译 Windows，必须通过 GitHub Actions 的 windows-latest runner 打包
 
 # ── 生成接口契约 ──
 cd backend
