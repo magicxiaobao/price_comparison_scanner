@@ -1,4 +1,5 @@
 # -*- mode: python ; coding: utf-8 -*-
+import sys
 from PyInstaller.utils.hooks import collect_submodules
 
 hiddenimports = []
@@ -30,7 +31,7 @@ exe = EXE(
     bootloader_ignore_signals=False,
     strip=False,
     upx=True,
-    console=False,
+    console=(sys.platform != 'win32'),
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
