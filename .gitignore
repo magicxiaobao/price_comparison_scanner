@@ -12,6 +12,7 @@ target/
 # PyInstaller
 backend/build/
 *.spec
+!backend/backend.spec
 
 # Sidecar (PyInstaller --onedir output, not committed)
 frontend/src-tauri/binaries/backend-*
