@@ -9,7 +9,7 @@ a = Analysis(
     ['main.py'],
     pathex=['.'],
     binaries=[],
-    datas=[('db/schema.sql', 'db')],
+    datas=[('db/schema.sql', 'db'), ('sample_projects', 'sample_projects')],
     hiddenimports=hiddenimports,
     hookspath=[],
     hooksconfig={},

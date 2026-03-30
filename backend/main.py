@@ -19,7 +19,9 @@ from api.rules import router as rules_router
 from api.shutdown import router as shutdown_router
 from api.standardization import router as standardization_router
 from api.tasks import router as tasks_router
-from config import error_logger, settings
+from config import error_logger, init_sample_projects, settings
+
+init_sample_projects()
 
 app = FastAPI(
     title="三方比价支出依据扫描工具",
