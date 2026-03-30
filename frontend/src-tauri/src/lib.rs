@@ -185,6 +185,9 @@ fn start_sidecar_with<R: Runtime>(
         .path()
         .resource_dir()
         .map_err(|e| format!("获取资源目录失败: {}", e))?;
+    #[cfg(windows)]
+    let sidecar_bin = resource_dir.join("sidecar").join("backend.exe");
+    #[cfg(not(windows))]
     let sidecar_bin = resource_dir.join("sidecar").join("backend");
 
     sidecar_log(
