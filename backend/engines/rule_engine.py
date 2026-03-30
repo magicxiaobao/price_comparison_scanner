@@ -60,9 +60,16 @@ class RuleEngine:
     # ── 规则加载 ──
 
     def load_global_rules(self) -> RuleSet:
-        """加载用户自定义规则（user-rules.json）"""
+        """加载用户自定义规则（user-rules.json），首次使用时自动加载默认模板"""
         path = self.rules_dir / "user-rules.json"
         if not path.exists():
+            self._ensure_default_templates()
+            default_path = self.rules_dir / "default-template.json"
+            if default_path.exists():
+                default_rs = self._read_rule_file("default-template.json")
+                default_rs.last_updated = datetime.now(UTC).isoformat()
+                self._write_rule_file("user-rules.json", default_rs)
+                return default_rs
             return RuleSet()
         return self._read_rule_file("user-rules.json")
 
