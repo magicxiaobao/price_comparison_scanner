@@ -54,20 +54,13 @@ client.interceptors.request.use((config) => {
 });
 
 /**
- * Tauri HTTP adapter: uses @tauri-apps/plugin-http (Rust network stack)
- * to bypass WKWebView HTTP restrictions on macOS.
+ * Tauri HTTP adapter: uses native fetch to call sidecar API.
+ * Previously used @tauri-apps/plugin-http (Rust reqwest), but macOS 15.5+
+ * blocks reqwest outgoing connections from ad-hoc signed apps.
+ * Native fetch works because Tauri capabilities already allow http://127.0.0.1 access.
  */
-let tauriFetchPromise: Promise<typeof globalThis.fetch> | null = null;
-
-function ensureTauriFetch(): Promise<typeof globalThis.fetch> {
-  if (!tauriFetchPromise) {
-    tauriFetchPromise = import("@tauri-apps/plugin-http").then(m => m.fetch);
-  }
-  return tauriFetchPromise;
-}
-
 async function tauriHttpAdapter(config: InternalAxiosRequestConfig): Promise<any> {
-  const fetchFn = await ensureTauriFetch();
+  const fetchFn = globalThis.fetch.bind(globalThis);
   const url = (config.baseURL || "") + (config.url || "");
   const method = (config.method || "GET").toUpperCase();
   console.log("[tauri-http] →", method, url);
