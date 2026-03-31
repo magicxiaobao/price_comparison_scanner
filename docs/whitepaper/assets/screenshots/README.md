@@ -95,16 +95,16 @@ with sync_playwright() as p:
 
 | 编号 | 文件名 | 画面内容 | 目标 URL | 前置状态要求 | 用途章节 | 预期采集方式 | 实际来源类型（采集后回填） | 设计图 fallback |
 |------|--------|----------|----------|--------------|----------|--------------|----------------------------|-----------------|
-| 01 | `01-home.png` | 首页 / 最近项目列表 | `http://localhost:5173/#/` | 至少存在 1 个已有项目（显示在最近项目列表） | §1 产品概述、§9 典型界面展示 | live-capture | - | `docs/design/ui/home/screen.png` |
-| 02 | `02-create-project-dialog.png` | 新建项目弹窗（打开状态） | `http://localhost:5173/#/` | 首页已打开，点击"新建项目"触发弹窗 | §9 典型界面展示 | live-capture | - | `docs/design/ui/dialogs/screen.png` |
-| 03 | `03-import-stage.png` | 文件导入阶段 | `http://localhost:5173/#/project/:project-id` | 工作台已加载，点击"导入文件"标签，已显示已上传文件列表 | §5.1 文件导入 | live-capture | - | `docs/design/ui/import-stage/screen.png` |
-| 04 | `04-standardize-stage.png` | 标准化阶段表格 | `http://localhost:5173/#/project/:project-id` | 工作台已加载，点击"标准化"标签，标准化表格已显示数据行 | §5.2 字段标准化 | live-capture | - | `docs/design/ui/standardize-stage/screen.png` |
-| 05 | `05-grouping-stage.png` | 商品归组界面 | `http://localhost:5173/#/project/:project-id` | 工作台已加载，点击"商品归组"标签，商品分组卡片已显示 | §5.3 商品归组 | live-capture | - | `docs/design/ui/grouping-stage/screen.png` |
-| 06 | `06-compliance-stage.png` | 符合性审查界面（矩阵已加载） | `http://localhost:5173/#/project/:project-id` | 工作台已加载，点击"符合性审查"标签，符合性矩阵已显示 | §5.4 符合性审查 | live-capture | - | `docs/design/ui/compliance-matrix/screen.png` |
-| 07 | `07-comparison-stage.png` | 比价结果界面（表格已加载） | `http://localhost:5173/#/project/:project-id` | 工作台已加载，点击"比价导出"标签，比价结果表格已显示 | §5.5 比价结果与导出 | live-capture | - | `docs/design/ui/comparison-export/screen.png` |
-| 08 | `08-rule-management.png` | 规则管理页面 | `http://localhost:5173/#/rules` | 直接访问，规则列表已显示（可为空列表） | §6 关键产品亮点 | live-capture | - | `docs/design/ui/rule-management/screen.png` |
-| 09 | `09-app-preferences.png` | 应用设置页面 | `http://localhost:5173/#/preferences` | 直接访问，设置项已显示 | §8 数据安全与部署优势 | live-capture | - | `docs/design/ui/app-preferences/screen.png` |
-| 10 | `10-export-result.png` | 导出后的底稿（Excel 导出成功提示或文件预览） | `http://localhost:5173/#/project/:project-id` | 工作台已加载，点击"比价导出"标签，点击导出后截取导出成功提示或打开导出文件进行截图 | §10 交付成果与验收价值 | export-capture | - | `docs/design/ui/comparison-export/screen.png` |
+| 01 | `01-home.png` | 首页 / 最近项目列表 | `http://localhost:5173/#/` | 至少存在 1 个已有项目（显示在最近项目列表） | §1 产品概述、§9 典型界面展示 | live-capture | live-capture | `docs/design/ui/home/screen.png` |
+| 02 | `02-create-project-dialog.png` | 新建项目弹窗（打开状态） | `http://localhost:5173/#/` | 首页已打开，点击"新建项目"触发弹窗 | §9 典型界面展示 | live-capture | live-capture | `docs/design/ui/dialogs/screen.png` |
+| 03 | `03-import-stage.png` | 文件导入阶段 | `http://localhost:5173/#/project/:project-id` | 工作台已加载，点击"导入文件"标签，已显示已上传文件列表 | §5.1 文件导入 | live-capture | live-capture | `docs/design/ui/import-stage/screen.png` |
+| 04 | `04-standardize-stage.png` | 标准化阶段表格 | `http://localhost:5173/#/project/:project-id` | 工作台已加载，点击"标准化"标签，标准化表格已显示数据行 | §5.2 字段标准化 | live-capture | live-capture | `docs/design/ui/standardize-stage/screen.png` |
+| 05 | `05-grouping-stage.png` | 商品归组界面 | `http://localhost:5173/#/project/:project-id` | 工作台已加载，点击"商品归组"标签，商品分组卡片已显示 | §5.3 商品归组 | live-capture | live-capture | `docs/design/ui/grouping-stage/screen.png` |
+| 06 | `06-compliance-stage.png` | 符合性审查界面（空状态：尚未设置需求标准） | `http://localhost:5173/#/project/:project-id` | 工作台已加载，点击"符合性审查"标签，该项目未配置需求标准，显示空状态页 | §5.4 符合性审查 | live-capture | live-capture | `docs/design/ui/compliance-matrix/screen.png` |
+| 07 | `07-comparison-stage.png` | 比价结果界面（表格已加载） | `http://localhost:5173/#/project/:project-id` | 工作台已加载，点击"比价导出"标签，比价结果表格已显示 | §5.5 比价结果与导出 | live-capture | live-capture | `docs/design/ui/comparison-export/screen.png` |
+| 08 | `08-rule-management.png` | 规则管理页面 | `http://localhost:5173/#/rules` | 直接访问，规则列表已显示（可为空列表） | §6 关键产品亮点 | live-capture | live-capture | `docs/design/ui/rule-management/screen.png` |
+| 09 | `09-app-preferences.png` | 应用设置页面 | `http://localhost:5173/#/preferences` | 直接访问，设置项已显示 | §8 数据安全与部署优势 | live-capture | live-capture | `docs/design/ui/app-preferences/screen.png` |
+| 10 | `10-export-result.png` | 比价导出阶段（导出后界面，含导出文件链接） | `http://localhost:5173/#/project/:project-id` | 工作台已加载，点击"比价导出"标签，点击"导出底稿"后截取含导出文件链接的界面状态 | §10 交付成果与验收价值 | export-capture | live-capture | `docs/design/ui/comparison-export/screen.png` |
 
 ### 阶段导航说明
 
